@@ -1,0 +1,93 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.1.0'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.Tourismdata'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// ===== Main =====
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	runtimeOnly 'com.mysql:mysql-connector-j'
+
+	// JWT (global/security 에서 AccessToken/RefreshToken 발급·검증에 사용)
+	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+	// QueryDSL - OpenFeign 포크 사용
+	// 원래 com.querydsl 그룹은 2024년 1월 이후 업데이트가 중단되었고
+	// HQL 인젝션 취약점(CVE-2024-49203)이 패치되지 않은 상태입니다.
+	// 커뮤니티가 유지보수 중인 io.github.openfeign.querydsl 로 대체합니다.
+	implementation 'io.github.openfeign.querydsl:querydsl-jpa:7.5'
+	annotationProcessor 'io.github.openfeign.querydsl:querydsl-apt:7.5'
+	annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
+	annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
+
+	// ===== Test =====
+	// 기본 테스트 스타터 (JUnit Jupiter, Mockito, AssertJ, Hamcrest 등 핵심 라이브러리 포함)
+	// 이게 없으면 아래 기술별 -test 컴패니언만으로는 테스트가 아예 실행되지 않습니다.
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+	// 기술별 테스트 슬라이스 애노테이션(@DataJpaTest, @WebMvcTest 등) 지원
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-data-redis-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+
+	testCompileOnly 'org.projectlombok:lombok'
+	testAnnotationProcessor 'org.projectlombok:lombok'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// Lombok + QueryDSL 어노테이션 프로세서가 함께 동작하도록 compileOnly에 연결
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+// Q클래스가 생성될 위치 지정 (build/generated 하위)
+def querydslDir = layout.buildDirectory.dir("generated/querydsl").get().asFile
+
+sourceSets {
+	main {
+		java {
+			srcDirs += querydslDir
+		}
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.generatedSourceOutputDirectory.set(querydslDir)
+}
+
+// clean 시 생성된 Q클래스도 함께 삭제
+clean {
+	delete file(querydslDir)
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
