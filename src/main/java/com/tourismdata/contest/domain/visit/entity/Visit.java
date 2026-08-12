@@ -3,7 +3,6 @@ package com.tourismdata.contest.domain.visit.entity;
 import com.tourismdata.contest.domain.course.entity.Checkpoint;
 import com.tourismdata.contest.domain.course.entity.Course;
 import com.tourismdata.contest.domain.mode.entity.Mode;
-import com.tourismdata.contest.domain.user.entity.User;
 import java.time.LocalDateTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -22,6 +21,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+// 비로그인 방식(팀 결정, Case A): 로그인 폼 없음, User 엔티티 없음.
+// 클라이언트가 visitId를 localStorage에 저장해서 식별하며, 기기 변경 시 기록은 유지되지 않음.
 @Entity
 @Table(name = "visits")
 @Getter
@@ -32,10 +33,6 @@ public class Visit {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "visit_id")
     private Long visitId;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id")
@@ -67,8 +64,7 @@ public class Visit {
     private String resultSummary;
 
     @Builder
-    public Visit(User user, Course course, Mode mode) {
-        this.user = user;
+    public Visit(Course course, Mode mode) {
         this.course = course;
         this.mode = mode;
         this.visitedCheckpointCount = 0;
