@@ -1,0 +1,31 @@
+spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.spatial.dialect.postgis.PostgisPG95Dialect
+    show-sql: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+
+external:
+  tourapi:
+    base-url: https://apis.data.go.kr/B551011/KorService1
+    service-key: ${TOURAPI_SERVICE_KEY}
+  kakao-local:
+    base-url: https://dapi.kakao.com/v2/local
+    rest-api-key: ${KAKAO_REST_API_KEY}
+
+logging:
+  level:
+    com.tourismdata.contest: INFO

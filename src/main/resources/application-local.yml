@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/tourismdata_contest
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.spatial.dialect.postgis.PostgisPG95Dialect
+    show-sql: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+external:
+  tourapi:
+    base-url: https://apis.data.go.kr/B551011/KorService1
+    service-key: ${TOURAPI_SERVICE_KEY:}
+  kakao-local:
+    base-url: https://dapi.kakao.com/v2/local
+    rest-api-key: ${KAKAO_REST_API_KEY:}
+
+logging:
+  level:
+    com.tourismdata.contest: DEBUG
