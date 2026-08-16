@@ -1,5 +1,10 @@
 package com.tourismdata.contest.domain.visit.dto;
 
-public record LocationUpdateRequest() {
+import java.time.LocalDateTime;
 
+public record LocationUpdateRequest(
+        Double latitude,
+        Double longitude,
+        LocalDateTime recordedAt
+) {
 }
