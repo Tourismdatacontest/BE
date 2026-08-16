@@ -8,5 +8,5 @@ import com.tourismdata.contest.domain.visit.entity.VisitLocationLog;
 
 public interface VisitLocationLogRepository extends JpaRepository<VisitLocationLog, Long> {
 
-    List<VisitLocationLog> findByVisit_VisitIdOrderByRecordedAtAsc(Long visitId);
+    List<VisitLocationLog> findByVisit_VisitIdOrderByRecordedAtAscLogIdAsc(Long visitId);
 }

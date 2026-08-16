@@ -14,6 +14,7 @@ import com.tourismdata.contest.domain.visit.dto.VisitResponse;
 import com.tourismdata.contest.domain.visit.dto.VisitResultResponse;
 import com.tourismdata.contest.domain.visit.service.VisitService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 // POST /visits, GET /visits/{visitId}, POST /visits/{visitId}/complete, GET /visits/{visitId}/result
@@ -26,7 +27,7 @@ public class VisitController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public VisitResponse createVisit(@RequestBody VisitCreateRequest request) {
+    public VisitResponse createVisit(@Valid @RequestBody VisitCreateRequest request) {
         return visitService.createVisit(request);
     }
 

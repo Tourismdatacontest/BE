@@ -16,6 +16,7 @@ import com.tourismdata.contest.domain.visit.dto.VisitResponse;
 import com.tourismdata.contest.domain.visit.dto.VisitResultResponse;
 import com.tourismdata.contest.domain.visit.entity.Visit;
 import com.tourismdata.contest.domain.visit.entity.VisitLocationLog;
+import com.tourismdata.contest.domain.visit.entity.VisitStatus;
 import com.tourismdata.contest.domain.visit.repository.VisitLocationLogRepository;
 import com.tourismdata.contest.domain.visit.repository.VisitRepository;
 import com.tourismdata.contest.global.exception.CustomException;
@@ -56,6 +57,11 @@ public class VisitService {
 
     public VisitResponse completeVisit(Long visitId) {
         Visit visit = findVisitOrThrow(visitId);
+        if (visit.getStatus() == VisitStatus.COMPLETED) {
+            // 이미 완료된 탐방을 다시 완료 처리하면 completedAt이 덮어써져 소요시간이 틀어지므로,
+            // 재요청은 상태를 바꾸지 않고 현재 상태 그대로 반환한다.
+            return VisitResponse.from(visit);
+        }
         String summary = "%s 코스 탐방 완료 (체크포인트 %d개 방문)"
                 .formatted(visit.getCourse().getTitle(), visit.getVisitedCheckpointCount());
         visit.complete(summary);
@@ -65,7 +71,7 @@ public class VisitService {
     @Transactional(readOnly = true)
     public VisitResultResponse getVisitResult(Long visitId) {
         Visit visit = findVisitOrThrow(visitId);
-        List<VisitLocationLog> logs = visitLocationLogRepository.findByVisit_VisitIdOrderByRecordedAtAsc(visitId);
+        List<VisitLocationLog> logs = visitLocationLogRepository.findByVisit_VisitIdOrderByRecordedAtAscLogIdAsc(visitId);
 
         return new VisitResultResponse(
                 visit.getVisitId(),

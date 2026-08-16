@@ -1,7 +1,6 @@
 package com.tourismdata.contest.domain.visit.service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -70,18 +69,20 @@ public class LocationTrackingService {
                                 checkpoint.getLatitude(), checkpoint.getLongitude())));
     }
 
+    // 바로 다음 순번 체크포인트인지부터 확인하고, 그다음에 반경 안인지 판정한다.
+    // (순번 이상인 체크포인트 중 아무거나 반경 안에 있으면 걸리도록 짜면, 2번을 건너뛰고
+    // 3번 체크포인트 근처에 있다는 이유만으로 진행이 앞당겨지는 버그가 생긴다.)
     private Optional<Checkpoint> findNextNearbyCheckpoint(Visit visit, double latitude, double longitude) {
-        List<Checkpoint> checkpoints = checkpointRepository
-                .findByCourse_CourseIdOrderByOrderNoAsc(visit.getCourse().getCourseId());
-
         int nextOrderNo = visit.getCurrentCheckpoint() != null
                 ? visit.getCurrentCheckpoint().getOrderNo() + 1
                 : 1;
 
-        return checkpoints.stream()
-                .filter(checkpoint -> checkpoint.getOrderNo() >= nextOrderNo)
+        return checkpointRepository
+                .findByCourse_CourseIdOrderByOrderNoAsc(visit.getCourse().getCourseId())
+                .stream()
+                .filter(checkpoint -> checkpoint.getOrderNo().equals(nextOrderNo))
+                .findFirst()
                 .filter(checkpoint -> GeoUtils.isWithinRadius(latitude, longitude,
-                        checkpoint.getLatitude(), checkpoint.getLongitude(), CHECKPOINT_TRIGGER_RADIUS_METERS))
-                .findFirst();
+                        checkpoint.getLatitude(), checkpoint.getLongitude(), CHECKPOINT_TRIGGER_RADIUS_METERS));
     }
 }

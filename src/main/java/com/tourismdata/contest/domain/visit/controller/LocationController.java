@@ -11,6 +11,7 @@ import com.tourismdata.contest.domain.visit.dto.LocationUpdateRequest;
 import com.tourismdata.contest.domain.visit.dto.VisitLocationLogResponse;
 import com.tourismdata.contest.domain.visit.service.LocationTrackingService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 // POST /visits/{visitId}/location, GET /checkpoints/{checkpointId}
@@ -22,7 +23,7 @@ public class LocationController {
 
     @PostMapping("/visits/{visitId}/location")
     public VisitLocationLogResponse updateLocation(@PathVariable Long visitId,
-                                                     @RequestBody LocationUpdateRequest request) {
+                                                     @Valid @RequestBody LocationUpdateRequest request) {
         return locationTrackingService.recordLocation(visitId, request);
     }
 
