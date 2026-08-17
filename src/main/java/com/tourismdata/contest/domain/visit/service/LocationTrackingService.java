@@ -2,6 +2,7 @@ package com.tourismdata.contest.domain.visit.service;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,8 +36,8 @@ public class LocationTrackingService {
     private final VisitLocationLogRepository visitLocationLogRepository;
     private final CheckpointRepository checkpointRepository;
 
-    public VisitLocationLogResponse recordLocation(Long visitId, LocationUpdateRequest request) {
-        Visit visit = visitRepository.findById(visitId)
+    public VisitLocationLogResponse recordLocation(UUID visitUuid, LocationUpdateRequest request) {
+        Visit visit = visitRepository.findByVisitUuid(visitUuid)
                 .orElseThrow(() -> new CustomException(ErrorCode.VISIT_NOT_FOUND));
 
         LocalDateTime recordedAt = request.recordedAt() != null ? request.recordedAt() : LocalDateTime.now();

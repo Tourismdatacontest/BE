@@ -4,6 +4,7 @@ import com.tourismdata.contest.domain.course.entity.Checkpoint;
 import com.tourismdata.contest.domain.course.entity.Course;
 import com.tourismdata.contest.domain.mode.entity.Mode;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -22,7 +23,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 // 비로그인 방식(팀 결정, Case A): 로그인 폼 없음, User 엔티티 없음.
-// 클라이언트가 visitId를 localStorage에 저장해서 식별하며, 기기 변경 시 기록은 유지되지 않음.
+// 클라이언트가 visitUuid를 localStorage에 저장해서 식별하며, 기기 변경 시 기록은 유지되지 않음.
+// visitId(순차 증가 PK)는 내부 FK 조인 전용이고, 외부에 노출되는 식별자는 visitUuid다
+// (순차 숫자를 그대로 노출하면 다른 사람의 탐방 기록을 순회로 열람/조작할 수 있어 CodeRabbit이 지적함).
 @Entity
 @Table(name = "visits")
 @Getter
@@ -33,6 +36,9 @@ public class Visit {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "visit_id")
     private Long visitId;
+
+    @Column(name = "visit_uuid", nullable = false, unique = true, updatable = false)
+    private UUID visitUuid;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id")
@@ -67,6 +73,7 @@ public class Visit {
     public Visit(Course course, Mode mode) {
         this.course = course;
         this.mode = mode;
+        this.visitUuid = UUID.randomUUID();
         this.visitedCheckpointCount = 0;
         this.status = VisitStatus.IN_PROGRESS;
         this.startedAt = LocalDateTime.now();

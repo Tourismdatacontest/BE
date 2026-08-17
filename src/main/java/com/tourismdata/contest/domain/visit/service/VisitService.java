@@ -2,6 +2,7 @@ package com.tourismdata.contest.domain.visit.service;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,12 +52,12 @@ public class VisitService {
     }
 
     @Transactional(readOnly = true)
-    public VisitResponse getVisit(Long visitId) {
-        return VisitResponse.from(findVisitOrThrow(visitId));
+    public VisitResponse getVisit(UUID visitUuid) {
+        return VisitResponse.from(findVisitOrThrow(visitUuid));
     }
 
-    public VisitResponse completeVisit(Long visitId) {
-        Visit visit = findVisitOrThrow(visitId);
+    public VisitResponse completeVisit(UUID visitUuid) {
+        Visit visit = findVisitOrThrow(visitUuid);
         if (visit.getStatus() == VisitStatus.COMPLETED) {
             // 이미 완료된 탐방을 다시 완료 처리하면 completedAt이 덮어써져 소요시간이 틀어지므로,
             // 재요청은 상태를 바꾸지 않고 현재 상태 그대로 반환한다.
@@ -69,12 +70,13 @@ public class VisitService {
     }
 
     @Transactional(readOnly = true)
-    public VisitResultResponse getVisitResult(Long visitId) {
-        Visit visit = findVisitOrThrow(visitId);
-        List<VisitLocationLog> logs = visitLocationLogRepository.findByVisit_VisitIdOrderByRecordedAtAscLogIdAsc(visitId);
+    public VisitResultResponse getVisitResult(UUID visitUuid) {
+        Visit visit = findVisitOrThrow(visitUuid);
+        List<VisitLocationLog> logs = visitLocationLogRepository
+                .findByVisit_VisitIdOrderByRecordedAtAscLogIdAsc(visit.getVisitId());
 
         return new VisitResultResponse(
-                visit.getVisitId(),
+                visit.getVisitUuid(),
                 visit.getCourse().getCourseId(),
                 calculateTotalDistanceM(logs),
                 calculateDurationSeconds(visit),
@@ -84,8 +86,8 @@ public class VisitService {
         );
     }
 
-    private Visit findVisitOrThrow(Long visitId) {
-        return visitRepository.findById(visitId)
+    private Visit findVisitOrThrow(UUID visitUuid) {
+        return visitRepository.findByVisitUuid(visitUuid)
                 .orElseThrow(() -> new CustomException(ErrorCode.VISIT_NOT_FOUND));
     }
 

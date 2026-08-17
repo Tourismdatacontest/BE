@@ -1,5 +1,7 @@
 package com.tourismdata.contest.domain.visit.controller;
 
+import java.util.UUID;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,17 +34,17 @@ public class VisitController {
     }
 
     @GetMapping("/{visitId}")
-    public VisitResponse getVisit(@PathVariable Long visitId) {
-        return visitService.getVisit(visitId);
+    public VisitResponse getVisit(@PathVariable("visitId") UUID visitUuid) {
+        return visitService.getVisit(visitUuid);
     }
 
     @PostMapping("/{visitId}/complete")
-    public VisitResponse completeVisit(@PathVariable Long visitId) {
-        return visitService.completeVisit(visitId);
+    public VisitResponse completeVisit(@PathVariable("visitId") UUID visitUuid) {
+        return visitService.completeVisit(visitUuid);
     }
 
     @GetMapping("/{visitId}/result")
-    public VisitResultResponse getVisitResult(@PathVariable Long visitId) {
-        return visitService.getVisitResult(visitId);
+    public VisitResultResponse getVisitResult(@PathVariable("visitId") UUID visitUuid) {
+        return visitService.getVisitResult(visitUuid);
     }
 }

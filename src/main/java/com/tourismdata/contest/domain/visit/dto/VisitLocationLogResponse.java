@@ -1,12 +1,13 @@
 package com.tourismdata.contest.domain.visit.dto;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import com.tourismdata.contest.domain.visit.entity.VisitLocationLog;
 
 public record VisitLocationLogResponse(
         Long logId,
-        Long visitId,
+        UUID visitId,
         Double latitude,
         Double longitude,
         LocalDateTime recordedAt,
@@ -16,7 +17,7 @@ public record VisitLocationLogResponse(
     public static VisitLocationLogResponse from(VisitLocationLog log) {
         return new VisitLocationLogResponse(
                 log.getLogId(),
-                log.getVisit().getVisitId(),
+                log.getVisit().getVisitUuid(),
                 log.getLatitude(),
                 log.getLongitude(),
                 log.getRecordedAt(),
