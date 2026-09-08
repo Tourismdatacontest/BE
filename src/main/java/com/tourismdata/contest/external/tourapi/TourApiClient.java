@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -14,10 +16,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-// 한국관광공사 TourAPI 호출 클라이언트 (ETL 소스)
-// ⚠️ application-local.yml의 base-url이 KorService1인데, TourAPI가 KorService2로 이전된 지
-//    오래라 실제 호출되는지 먼저 확인 필요 (안 되면 base-url부터 KorService2로 교체해야 함).
-// cat3 카페 코드(A05020900)도 추정치라 실제 응답으로 검증 필요.
+/**
+ * 한국관광공사 TourAPI 호출 클라이언트 (ETL 소스).
+ *
+ * TourAPI 응답 특이사항 방어:
+ * - 결과 0건일 때 items가 객체가 아니라 빈 문자열("")로 옴 -> 타입으로 바로 역직렬화하면 실패.
+ * - 결과 정확히 1건일 때 item이 배열이 아니라 단일 객체로 옴.
+ * 이 두 케이스 때문에 응답을 바로 TourApiLocationResponse로 매핑하지 않고,
+ * 원시 JSON을 받아 JsonNode로 방어적으로 파싱한다.
+ */
 @Component
 public class TourApiClient {
 
@@ -26,6 +33,7 @@ public class TourApiClient {
     private static final String CAT3_CAFE = "A05020900";
 
     private final RestTemplate restTemplate = new RestTemplate();
+    private final JsonMapper objectMapper = JsonMapper.builder().build();
 
     @Value("${external.tourapi.base-url}")
     private String baseUrl;
@@ -50,14 +58,14 @@ public class TourApiClient {
     }
 
     private List<TourApiPlaceDto> fetchByContentType(String contentTypeId) {
-        URI uri = UriComponentsBuilder.fromHttpUrl(baseUrl + "/locationBasedList2")
+        URI uri = UriComponentsBuilder.fromUriString(baseUrl + "/locationBasedList2")
             .queryParam("serviceKey", serviceKey)
             .queryParam("MobileOS", "ETC")
             .queryParam("MobileApp", "NamhansanseongWalk")
             .queryParam("_type", "json")
             .queryParam("numOfRows", 100)
             .queryParam("pageNo", 1)
-            .queryParam("arrangeType", "E")
+            .queryParam("arrange", "E")
             .queryParam("mapX", mapX)
             .queryParam("mapY", mapY)
             .queryParam("radius", radiusMeters)
@@ -65,8 +73,8 @@ public class TourApiClient {
             .build(true)
             .toUri();
 
-        TourApiLocationResponse response = restTemplate.getForObject(uri, TourApiLocationResponse.class);
-        List<TourApiLocationResponse.Item> items = extractItems(response);
+        String rawJson = restTemplate.getForObject(uri, String.class);
+        List<TourApiLocationResponse.Item> items = extractItems(rawJson);
 
         return items.stream()
             .map(item -> toDto(item, contentTypeId))
@@ -74,12 +82,37 @@ public class TourApiClient {
             .toList();
     }
 
-    private List<TourApiLocationResponse.Item> extractItems(TourApiLocationResponse response) {
-        if (response == null || response.response() == null || response.response().body() == null
-            || response.response().body().items() == null || response.response().body().items().item() == null) {
+    /**
+     * response.body.items를 방어적으로 파싱한다.
+     * - items가 객체가 아니면(빈 문자열 등) 빈 리스트 반환.
+     * - item이 배열이면 각 원소를, 단일 객체면 그 하나만 파싱.
+     */
+    private List<TourApiLocationResponse.Item> extractItems(String rawJson) {
+        if (rawJson == null || rawJson.isBlank()) {
             return Collections.emptyList();
         }
-        return response.response().body().items().item();
+
+        JsonNode root = objectMapper.readTree(rawJson);
+        JsonNode itemsNode = root.path("response").path("body").path("items");
+
+        if (!itemsNode.isObject()) {
+            return Collections.emptyList();
+        }
+
+        JsonNode itemNode = itemsNode.path("item");
+        if (itemNode.isMissingNode() || itemNode.isNull()) {
+            return Collections.emptyList();
+        }
+
+        List<TourApiLocationResponse.Item> result = new ArrayList<>();
+        if (itemNode.isArray()) {
+            for (JsonNode node : itemNode) {
+                result.add(objectMapper.treeToValue(node, TourApiLocationResponse.Item.class));
+            }
+        } else if (itemNode.isObject()) {
+            result.add(objectMapper.treeToValue(itemNode, TourApiLocationResponse.Item.class));
+        }
+        return result;
     }
 
     private TourApiPlaceDto toDto(TourApiLocationResponse.Item item, String contentTypeId) {
