@@ -3,6 +3,7 @@ package com.tourismdata.contest.domain.visit.entity;
 import com.tourismdata.contest.domain.course.entity.Checkpoint;
 import com.tourismdata.contest.domain.course.entity.Course;
 import com.tourismdata.contest.domain.mode.entity.Mode;
+import com.tourismdata.contest.domain.user.entity.User;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import jakarta.persistence.Column;
@@ -22,10 +23,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-// 비로그인 방식(팀 결정, Case A): 로그인 폼 없음, User 엔티티 없음.
-// 클라이언트가 visitUuid를 localStorage에 저장해서 식별하며, 기기 변경 시 기록은 유지되지 않음.
+// Kakao OAuth 로그인 확정에 따라 User 엔티티 재도입 (기존 비로그인 방식 결정을 번복).
+// user는 JWT 인증 미들웨어가 붙기 전까지는 서비스 계층에서 null로 생성됨 -- 로그인 플로우가
+// 완성되면 SecurityContext에서 인증된 사용자를 채우도록 VisitService.createVisit()을 마저 연결해야 한다.
 // visitId(순차 증가 PK)는 내부 FK 조인 전용이고, 외부에 노출되는 식별자는 visitUuid다
 // (순차 숫자를 그대로 노출하면 다른 사람의 탐방 기록을 순회로 열람/조작할 수 있어 CodeRabbit이 지적함).
+// 로그인 전환 이후에도 실제 소유권 검증(로그인된 user와 대조)이 붙기 전까지는 다중 방어 차원에서
+// visitUuid를 그대로 유지한다.
 @Entity
 @Table(name = "visits")
 @Getter
@@ -39,6 +43,10 @@ public class Visit {
 
     @Column(name = "visit_uuid", nullable = false, unique = true, updatable = false)
     private UUID visitUuid;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "course_id")
@@ -70,7 +78,8 @@ public class Visit {
     private String resultSummary;
 
     @Builder
-    public Visit(Course course, Mode mode) {
+    public Visit(User user, Course course, Mode mode) {
+        this.user = user;
         this.course = course;
         this.mode = mode;
         this.visitUuid = UUID.randomUUID();

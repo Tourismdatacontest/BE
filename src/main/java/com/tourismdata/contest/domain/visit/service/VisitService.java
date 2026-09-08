@@ -42,7 +42,9 @@ public class VisitService {
         Mode mode = modeRepository.findById(request.modeId())
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_VISIT_REQUEST));
 
+        // TODO: JWT 인증 붙으면 SecurityContext에서 로그인된 User를 꺼내 채워 넣기
         Visit visit = Visit.builder()
+                .user(null)
                 .course(course)
                 .mode(mode)
                 .build();
