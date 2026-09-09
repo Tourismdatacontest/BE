@@ -1,10 +1,9 @@
 package com.tourismdata.contest.domain.user.repository;
 
-import java.util.Optional;
-
+import com.tourismdata.contest.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.tourismdata.contest.domain.user.entity.User;
+import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
