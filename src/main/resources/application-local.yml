@@ -33,3 +33,14 @@ external:
 logging:
   level:
     com.tourismdata.contest: DEBUG
+
+kakao:
+  login:
+    client-id: "f331fa80a6575b97da405185c60a04e2"
+    client-secret: "cxqbghEDVOD0KpF7IYSl3KBxheF4BKTX"
+    redirect-uri: ${KAKAO_LOGIN_REDIRECT_URI:http://localhost:8080/oauth/kakao/callback}
+
+jwt:
+  # HS256은 최소 32바이트(256비트) 이상 시크릿 필요. openssl rand -base64 32 로 생성 추천.
+  secret: ${JWT_SECRET:}
+  access-token-expire-seconds: 3600
