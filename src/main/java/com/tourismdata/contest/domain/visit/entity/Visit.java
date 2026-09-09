@@ -3,6 +3,7 @@ package com.tourismdata.contest.domain.visit.entity;
 import com.tourismdata.contest.domain.course.entity.Checkpoint;
 import com.tourismdata.contest.domain.course.entity.Course;
 import com.tourismdata.contest.domain.mode.entity.Mode;
+import com.tourismdata.contest.domain.user.entity.User;
 import java.time.LocalDateTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,8 +22,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-// 비로그인 방식(팀 결정, Case A): 로그인 폼 없음, User 엔티티 없음.
-// 클라이언트가 visitId를 localStorage에 저장해서 식별하며, 기기 변경 시 기록은 유지되지 않음.
+// 하이브리드 로그인(팀 결정, 2026-09 업데이트): 기본은 비로그인(게스트)으로 시작.
+// 스토리 모드 보상 획득 시점에 사용자가 선택적으로 카카오 로그인하면 user가 채워짐
+// (AuthService.loginWithKakao에서 연결). user가 null이면 여전히 게스트 방문 기록.
 @Entity
 @Table(name = "visits")
 @Getter
@@ -45,6 +47,10 @@ public class Visit {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "current_checkpoint_id")
     private Checkpoint currentCheckpoint;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @Column(name = "visited_checkpoint_count")
     private Integer visitedCheckpointCount;
@@ -81,5 +87,10 @@ public class Visit {
         this.status = VisitStatus.COMPLETED;
         this.completedAt = LocalDateTime.now();
         this.resultSummary = resultSummary;
+    }
+
+    /** 스토리 모드 보상 획득 시점에 카카오 로그인하면 이 방문 세션을 계정에 연결. */
+    public void linkUser(User user) {
+        this.user = user;
     }
 }
