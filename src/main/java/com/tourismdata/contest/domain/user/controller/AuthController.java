@@ -16,6 +16,6 @@ public class AuthController {
 
     @PostMapping("/auth/kakao/login")
     public KakaoLoginResponse loginWithKakao(@RequestBody KakaoLoginRequest request) {
-        return authService.loginWithKakao(request.code(), request.visitId());
+        return authService.loginWithKakao(request.code(), request.visitIds());
     }
 }
