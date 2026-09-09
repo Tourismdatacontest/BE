@@ -1,104 +1,148 @@
 package com.tourismdata.contest.external.tourapi;
 
-import java.util.List;
-
+import com.tourismdata.contest.domain.nearby.entity.PlaceType;
+import com.tourismdata.contest.external.tourapi.dto.TourApiLocationResponse;
+import com.tourismdata.contest.external.tourapi.dto.TourApiPlaceDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.tourismdata.contest.external.tourapi.dto.TourApiPlaceDto;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 
-// 한국관광공사 TourAPI(KorService2) 연동 클라이언트.
-// 공공데이터포털에서 발급받은 서비스키로 관광지/음식점/행사 정보를 키워드 검색한다.
+/**
+ * 한국관광공사 TourAPI 호출 클라이언트 (ETL 소스).
+ *
+ * TourAPI 응답 특이사항 방어:
+ * - 결과 0건일 때 items가 객체가 아니라 빈 문자열("")로 옴 -> 타입으로 바로 역직렬화하면 실패.
+ * - 결과 정확히 1건일 때 item이 배열이 아니라 단일 객체로 옴.
+ * 이 두 케이스 때문에 응답을 바로 TourApiLocationResponse로 매핑하지 않고,
+ * 원시 JSON을 받아 JsonNode로 방어적으로 파싱한다.
+ */
 @Component
 public class TourApiClient {
 
-    private final RestClient restClient;
-    private final String serviceKey;
+    private static final String CONTENT_TYPE_LODGING = "32";
+    private static final String CONTENT_TYPE_FOOD = "39";
+    private static final String CAT3_CAFE = "A05020900";
 
-    public TourApiClient(@Value("${external.tourapi.base-url}") String baseUrl,
-                          @Value("${external.tourapi.service-key}") String serviceKey) {
-        this.restClient = RestClient.create(baseUrl);
-        this.serviceKey = serviceKey;
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final JsonMapper objectMapper = JsonMapper.builder().build();
+
+    @Value("${external.tourapi.base-url}")
+    private String baseUrl;
+
+    @Value("${external.tourapi.service-key}")
+    private String serviceKey;
+
+    @Value("${external.tourapi.map-x:127.1815}")
+    private double mapX;
+
+    @Value("${external.tourapi.map-y:37.4788}")
+    private double mapY;
+
+    @Value("${external.tourapi.radius-meters:2000}")
+    private int radiusMeters;
+
+    public List<TourApiPlaceDto> fetchRestaurantsAndLodging() {
+        List<TourApiPlaceDto> result = new ArrayList<>();
+        result.addAll(fetchByContentType(CONTENT_TYPE_FOOD));
+        result.addAll(fetchByContentType(CONTENT_TYPE_LODGING));
+        return result;
+    }
+
+    private List<TourApiPlaceDto> fetchByContentType(String contentTypeId) {
+        URI uri = UriComponentsBuilder.fromUriString(baseUrl + "/locationBasedList2")
+            .queryParam("serviceKey", serviceKey)
+            .queryParam("MobileOS", "ETC")
+            .queryParam("MobileApp", "NamhansanseongWalk")
+            .queryParam("_type", "json")
+            .queryParam("numOfRows", 100)
+            .queryParam("pageNo", 1)
+            .queryParam("arrange", "E")
+            .queryParam("mapX", mapX)
+            .queryParam("mapY", mapY)
+            .queryParam("radius", radiusMeters)
+            .queryParam("contentTypeId", contentTypeId)
+            .build(true)
+            .toUri();
+
+        String rawJson = restTemplate.getForObject(uri, String.class);
+        List<TourApiLocationResponse.Item> items = extractItems(rawJson);
+
+        return items.stream()
+            .map(item -> toDto(item, contentTypeId))
+            .filter(Objects::nonNull)
+            .toList();
     }
 
     /**
-     * 키워드로 관광정보를 검색한다 (예: "남한산성").
-     * TourAPI는 결과가 1건일 때 배열 대신 단일 객체를 반환하는 경우가 있어,
-     * 다건 검색이 확실한 용도(코스/체크포인트 시딩)로만 사용을 권장한다.
+     * response.body.items를 방어적으로 파싱한다.
+     * - items가 객체가 아니면(빈 문자열 등) 빈 리스트 반환.
+     * - item이 배열이면 각 원소를, 단일 객체면 그 하나만 파싱.
      */
-    public List<TourApiPlaceDto> searchKeyword(String keyword) {
-        SearchResponse response = restClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/searchKeyword2")
-                        .queryParam("serviceKey", serviceKey)
-                        .queryParam("numOfRows", 50)
-                        .queryParam("pageNo", 1)
-                        .queryParam("MobileOS", "ETC")
-                        .queryParam("MobileApp", "TourismdataContest")
-                        .queryParam("_type", "json")
-                        .queryParam("keyword", keyword)
-                        .build())
-                .retrieve()
-                .body(SearchResponse.class);
-
-        List<Item> items = extractItems(response);
-        return items.stream()
-                .map(item -> new TourApiPlaceDto(
-                        item.contentid(),
-                        item.contenttypeid(),
-                        item.title(),
-                        item.addr1(),
-                        item.firstimage(),
-                        parseDouble(item.mapy()),
-                        parseDouble(item.mapx())
-                ))
-                .toList();
-    }
-
-    private static List<Item> extractItems(SearchResponse response) {
-        if (response == null || response.response() == null
-                || response.response().body() == null
-                || response.response().body().items() == null
-                || response.response().body().items().item() == null) {
-            return List.of();
+    private List<TourApiLocationResponse.Item> extractItems(String rawJson) {
+        if (rawJson == null || rawJson.isBlank()) {
+            return Collections.emptyList();
         }
-        return response.response().body().items().item();
+
+        JsonNode root = objectMapper.readTree(rawJson);
+        JsonNode itemsNode = root.path("response").path("body").path("items");
+
+        if (!itemsNode.isObject()) {
+            return Collections.emptyList();
+        }
+
+        JsonNode itemNode = itemsNode.path("item");
+        if (itemNode.isMissingNode() || itemNode.isNull()) {
+            return Collections.emptyList();
+        }
+
+        List<TourApiLocationResponse.Item> result = new ArrayList<>();
+        if (itemNode.isArray()) {
+            for (JsonNode node : itemNode) {
+                result.add(objectMapper.treeToValue(node, TourApiLocationResponse.Item.class));
+            }
+        } else if (itemNode.isObject()) {
+            result.add(objectMapper.treeToValue(itemNode, TourApiLocationResponse.Item.class));
+        }
+        return result;
     }
 
-    private static Double parseDouble(String value) {
-        if (value == null || value.isBlank()) {
+    private TourApiPlaceDto toDto(TourApiLocationResponse.Item item, String contentTypeId) {
+        PlaceType type = resolveType(item, contentTypeId);
+        if (type == null) {
             return null;
         }
-        return Double.parseDouble(value);
+        Double lat = parse(item.mapy());
+        Double lng = parse(item.mapx());
+        if (lat == null || lng == null) {
+            return null;
+        }
+        return new TourApiPlaceDto(item.contentid(), type, item.title(), item.addr1(), lat, lng, item.firstimage());
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    record SearchResponse(Response response) {
+    private PlaceType resolveType(TourApiLocationResponse.Item item, String contentTypeId) {
+        if (CONTENT_TYPE_LODGING.equals(contentTypeId)) {
+            return PlaceType.LODGING;
+        }
+        if (CONTENT_TYPE_FOOD.equals(contentTypeId)) {
+            return CAT3_CAFE.equals(item.cat3()) ? PlaceType.CAFE : PlaceType.RESTAURANT;
+        }
+        return null;
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    record Response(Body body) {
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    record Body(Items items) {
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    record Items(List<Item> item) {
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    record Item(
-            String contentid,
-            String contenttypeid,
-            String title,
-            String addr1,
-            String firstimage,
-            String mapx,
-            String mapy
-    ) {
+    private Double parse(String value) {
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException | NullPointerException e) {
+            return null;
+        }
     }
 }

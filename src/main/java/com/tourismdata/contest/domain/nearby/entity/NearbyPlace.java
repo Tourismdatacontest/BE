@@ -65,4 +65,13 @@ public class NearbyPlace extends BaseTimeEntity {
         this.imageUrl = imageUrl;
         this.source = source;
     }
+
+    // ETL 재동기화 시 최신 값으로 갱신(upsert의 update 분기). NearbyPlaceSyncScheduler에서 사용.
+    public void updateFrom(String name, String address, Double latitude, Double longitude, String imageUrl) {
+        this.name = name;
+        this.address = address;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.imageUrl = imageUrl;
+    }
 }

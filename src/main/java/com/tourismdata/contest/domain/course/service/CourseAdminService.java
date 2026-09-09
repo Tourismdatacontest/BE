@@ -11,8 +11,8 @@ import com.tourismdata.contest.domain.course.entity.Checkpoint;
 import com.tourismdata.contest.domain.course.entity.Course;
 import com.tourismdata.contest.domain.course.repository.CheckpointRepository;
 import com.tourismdata.contest.domain.course.repository.CourseRepository;
-import com.tourismdata.contest.external.tourapi.TourApiClient;
-import com.tourismdata.contest.external.tourapi.dto.TourApiPlaceDto;
+import com.tourismdata.contest.external.tourapi.CheckpointTourApiClient;
+import com.tourismdata.contest.external.tourapi.dto.CheckpointTourApiPlaceDto;
 import com.tourismdata.contest.global.exception.CustomException;
 import com.tourismdata.contest.global.exception.ErrorCode;
 
@@ -30,7 +30,7 @@ public class CourseAdminService {
 
     private final CourseRepository courseRepository;
     private final CheckpointRepository checkpointRepository;
-    private final TourApiClient tourApiClient;
+    private final CheckpointTourApiClient tourApiClient;
 
     public List<CheckpointResponse> importCheckpointsFromTourApi(Long courseId, String keyword) {
         Course course = courseRepository.findById(courseId)
@@ -38,14 +38,14 @@ public class CourseAdminService {
 
         int nextOrderNo = checkpointRepository.findByCourse_CourseIdOrderByOrderNoAsc(courseId).size() + 1;
 
-        List<TourApiPlaceDto> places = tourApiClient.searchKeyword(keyword).stream()
+        List<CheckpointTourApiPlaceDto> places = tourApiClient.searchKeyword(keyword).stream()
                 .filter(place -> TOUR_API_ATTRACTION_TYPE.equals(place.contentTypeId()))
                 .filter(place -> place.latitude() != null && place.longitude() != null)
                 .toList();
 
         List<Checkpoint> checkpoints = new ArrayList<>();
         int orderNo = nextOrderNo;
-        for (TourApiPlaceDto place : places) {
+        for (CheckpointTourApiPlaceDto place : places) {
             checkpoints.add(Checkpoint.builder()
                     .course(course)
                     .orderNo(orderNo++)

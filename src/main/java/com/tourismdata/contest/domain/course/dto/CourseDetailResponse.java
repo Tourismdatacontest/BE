@@ -1,31 +1,30 @@
 package com.tourismdata.contest.domain.course.dto;
 
-import java.time.LocalDateTime;
-
 import com.tourismdata.contest.domain.course.entity.Course;
 import com.tourismdata.contest.domain.course.entity.Difficulty;
 
-public record CourseDetailResponse(
-        Long courseId,
-        String title,
-        String thumbnailUrl,
-        Integer distanceM,
-        Integer estimatedMinutes,
-        Difficulty difficulty,
-        String description,
-        LocalDateTime createdAt
-) {
+import java.time.LocalDateTime;
 
-    public static CourseDetailResponse from(Course course) {
+public record CourseDetailResponse(
+    Long courseId,
+    String title,
+    String description,
+    String thumbnailUrl,
+    Integer distanceM,
+    Integer estimatedMinutes,
+    Difficulty difficulty,
+    LocalDateTime createdAt
+) {
+    public static CourseDetailResponse from(Course entity) {
         return new CourseDetailResponse(
-                course.getCourseId(),
-                course.getTitle(),
-                course.getThumbnailUrl(),
-                course.getDistanceM(),
-                course.getEstimatedMinutes(),
-                course.getDifficulty(),
-                course.getDescription(),
-                course.getCreatedAt()
+            entity.getCourseId(),
+            entity.getTitle(),
+            entity.getDescription(),
+            entity.getThumbnailUrl(),
+            entity.getDistanceM(),
+            entity.getEstimatedMinutes(),
+            entity.getDifficulty(),
+            entity.getCreatedAt()
         );
     }
 }

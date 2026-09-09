@@ -3,18 +3,17 @@ package com.tourismdata.contest.domain.course.dto;
 import com.tourismdata.contest.domain.course.entity.RoutePoint;
 
 public record RoutePointResponse(
-        Long routePointId,
-        Integer sequence,
-        Double latitude,
-        Double longitude
+    Long routePointId,
+    Integer sequence,
+    Double latitude,
+    Double longitude
 ) {
-
-    public static RoutePointResponse from(RoutePoint routePoint) {
+    public static RoutePointResponse from(RoutePoint entity) {
         return new RoutePointResponse(
-                routePoint.getRoutePointId(),
-                routePoint.getSequence(),
-                routePoint.getLatitude(),
-                routePoint.getLongitude()
+            entity.getRoutePointId(),
+            entity.getSequence(),
+            entity.getLatitude(),
+            entity.getLongitude()
         );
     }
 }

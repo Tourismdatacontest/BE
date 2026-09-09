@@ -1,13 +1,15 @@
 package com.tourismdata.contest.external.tourapi.dto;
 
-// TourAPI 원본 응답에서 실제로 쓰는 필드만 정제한 형태
+import com.tourismdata.contest.domain.nearby.entity.PlaceType;
+
+// TourAPI 원본 응답을 정규화한 내부 DTO. NearbyPlaceSyncScheduler에서 NearbyPlace로 변환.
 public record TourApiPlaceDto(
-        String contentId,
-        String contentTypeId,
-        String title,
-        String addr1,
-        String firstImage,
-        Double latitude,
-        Double longitude
+    String contentId,
+    PlaceType type,
+    String name,
+    String address,
+    Double latitude,
+    Double longitude,
+    String imageUrl
 ) {
 }
