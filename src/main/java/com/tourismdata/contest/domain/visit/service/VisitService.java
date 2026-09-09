@@ -10,6 +10,8 @@ import com.tourismdata.contest.domain.course.entity.Course;
 import com.tourismdata.contest.domain.course.repository.CourseRepository;
 import com.tourismdata.contest.domain.mode.entity.Mode;
 import com.tourismdata.contest.domain.mode.repository.ModeRepository;
+import com.tourismdata.contest.domain.story.entity.VisitIngredient;
+import com.tourismdata.contest.domain.story.repository.VisitIngredientRepository;
 import com.tourismdata.contest.domain.visit.dto.CollectedIngredientResponse;
 import com.tourismdata.contest.domain.visit.dto.VisitCreateRequest;
 import com.tourismdata.contest.domain.visit.dto.VisitResponse;
@@ -32,6 +34,7 @@ public class VisitService {
 
     private final VisitRepository visitRepository;
     private final VisitLocationLogRepository visitLocationLogRepository;
+    private final VisitIngredientRepository visitIngredientRepository;
     private final CourseRepository courseRepository;
     private final ModeRepository modeRepository;
 
@@ -76,14 +79,27 @@ public class VisitService {
         List<VisitLocationLog> logs = visitLocationLogRepository
                 .findByVisit_VisitIdOrderByRecordedAtAscLogIdAsc(visitId);
 
+        List<CollectedIngredientResponse> collectedIngredients = visitIngredientRepository
+                .findByVisit_VisitId(visitId).stream()
+                .map(VisitService::toCollectedIngredientResponse)
+                .toList();
+
         return new VisitResultResponse(
                 visit.getVisitId(),
                 visit.getCourse().getCourseId(),
                 calculateTotalDistanceM(logs),
                 calculateDurationSeconds(visit),
                 visit.getVisitedCheckpointCount(),
-                List.<CollectedIngredientResponse>of(), // TODO: Story 도메인 완성되면 실제 수집 재료로 교체
+                collectedIngredients,
                 visit.getResultSummary()
+        );
+    }
+
+    private static CollectedIngredientResponse toCollectedIngredientResponse(VisitIngredient visitIngredient) {
+        return new CollectedIngredientResponse(
+                visitIngredient.getIngredient().getIngredientId(),
+                visitIngredient.getIngredient().getName(),
+                visitIngredient.getIngredient().getImageUrl()
         );
     }
 
