@@ -1,13 +1,12 @@
 package com.tourismdata.contest.domain.visit.dto;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 import com.tourismdata.contest.domain.visit.entity.Visit;
 import com.tourismdata.contest.domain.visit.entity.VisitStatus;
 
 public record VisitResponse(
-        UUID visitId,
+        Long visitId,
         Long courseId,
         Long modeId,
         Long currentCheckpointId,
@@ -19,7 +18,7 @@ public record VisitResponse(
 
     public static VisitResponse from(Visit visit) {
         return new VisitResponse(
-                visit.getVisitUuid(),
+                visit.getVisitId(),
                 visit.getCourse().getCourseId(),
                 visit.getMode().getModeId(),
                 visit.getCurrentCheckpoint() != null ? visit.getCurrentCheckpoint().getCheckpointId() : null,

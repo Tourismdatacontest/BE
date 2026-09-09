@@ -7,7 +7,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: true
@@ -21,8 +21,11 @@ spring:
 
 external:
   tourapi:
-    base-url: https://apis.data.go.kr/B551011/KorService1
+    base-url: https://apis.data.go.kr/B551011/KorService2
     service-key: ${TOURAPI_SERVICE_KEY:}
+    map-x: 127.1815
+    map-y: 37.4788
+    radius-meters: 2000
   kakao-local:
     base-url: https://dapi.kakao.com/v2/local
     rest-api-key: ${KAKAO_REST_API_KEY:}
@@ -30,3 +33,14 @@ external:
 logging:
   level:
     com.tourismdata.contest: DEBUG
+
+kakao:
+  login:
+    client-id: "f331fa80a6575b97da405185c60a04e2"
+    client-secret: "cxqbghEDVOD0KpF7IYSl3KBxheF4BKTX"
+    redirect-uri: ${KAKAO_LOGIN_REDIRECT_URI:http://localhost:8080/oauth/kakao/callback}
+
+jwt:
+  # HS256은 최소 32바이트(256비트) 이상 시크릿 필요. openssl rand -base64 32 로 생성 추천.
+  secret: ${JWT_SECRET:}
+  access-token-expire-seconds: 3600

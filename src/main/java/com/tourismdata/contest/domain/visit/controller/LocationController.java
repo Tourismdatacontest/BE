@@ -1,7 +1,5 @@
 package com.tourismdata.contest.domain.visit.controller;
 
-import java.util.UUID;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,9 +22,9 @@ public class LocationController {
     private final LocationTrackingService locationTrackingService;
 
     @PostMapping("/visits/{visitId}/location")
-    public VisitLocationLogResponse updateLocation(@PathVariable("visitId") UUID visitUuid,
+    public VisitLocationLogResponse updateLocation(@PathVariable Long visitId,
                                                      @Valid @RequestBody LocationUpdateRequest request) {
-        return locationTrackingService.recordLocation(visitUuid, request);
+        return locationTrackingService.recordLocation(visitId, request);
     }
 
     @GetMapping("/checkpoints/{checkpointId}")
