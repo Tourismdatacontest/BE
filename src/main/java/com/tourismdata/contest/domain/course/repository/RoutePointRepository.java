@@ -10,4 +10,6 @@ import java.util.List;
 public interface RoutePointRepository extends JpaRepository<RoutePoint, Long> {
 
     List<RoutePoint> findByCourse_CourseIdOrderBySequenceAsc(Long courseId);
+
+    void deleteByCourse_CourseId(Long courseId);
 }

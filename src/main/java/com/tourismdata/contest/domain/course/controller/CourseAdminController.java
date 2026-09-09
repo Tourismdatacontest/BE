@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tourismdata.contest.domain.course.dto.CheckpointResponse;
+import com.tourismdata.contest.domain.course.dto.RoutePointResponse;
 import com.tourismdata.contest.domain.course.service.CourseAdminService;
 
 import lombok.RequiredArgsConstructor;
@@ -26,5 +27,10 @@ public class CourseAdminController {
     public List<CheckpointResponse> syncCheckpointsFromTourApi(@PathVariable Long courseId,
                                                                  @RequestParam String keyword) {
         return courseAdminService.importCheckpointsFromTourApi(courseId, keyword);
+    }
+
+    @PostMapping("/{courseId}/route/generate-from-checkpoints")
+    public List<RoutePointResponse> generateRouteFromCheckpoints(@PathVariable Long courseId) {
+        return courseAdminService.generateRouteFromCheckpoints(courseId);
     }
 }

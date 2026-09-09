@@ -7,10 +7,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tourismdata.contest.domain.course.dto.CheckpointResponse;
+import com.tourismdata.contest.domain.course.dto.RoutePointResponse;
 import com.tourismdata.contest.domain.course.entity.Checkpoint;
 import com.tourismdata.contest.domain.course.entity.Course;
+import com.tourismdata.contest.domain.course.entity.RoutePoint;
 import com.tourismdata.contest.domain.course.repository.CheckpointRepository;
 import com.tourismdata.contest.domain.course.repository.CourseRepository;
+import com.tourismdata.contest.domain.course.repository.RoutePointRepository;
 import com.tourismdata.contest.external.tourapi.CheckpointTourApiClient;
 import com.tourismdata.contest.external.tourapi.dto.CheckpointTourApiPlaceDto;
 import com.tourismdata.contest.global.exception.CustomException;
@@ -30,6 +33,7 @@ public class CourseAdminService {
 
     private final CourseRepository courseRepository;
     private final CheckpointRepository checkpointRepository;
+    private final RoutePointRepository routePointRepository;
     private final CheckpointTourApiClient tourApiClient;
 
     public List<CheckpointResponse> importCheckpointsFromTourApi(Long courseId, String keyword) {
@@ -59,5 +63,35 @@ public class CourseAdminService {
 
         checkpointRepository.saveAll(checkpoints);
         return checkpoints.stream().map(CheckpointResponse::from).toList();
+    }
+
+    // 정밀 GPS 트레일 데이터 소스가 없어서, 이미 실좌표로 확보된 체크포인트들을 순서대로
+    // 이어 붙여 경로로 쓴다 (지어낸 좌표가 아니라 전부 실제 위치 기반). 재실행해도 안전하도록
+    // 기존 RoutePoint를 지우고 다시 만든다.
+    public List<RoutePointResponse> generateRouteFromCheckpoints(Long courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new CustomException(ErrorCode.COURSE_NOT_FOUND));
+
+        List<Checkpoint> checkpoints = checkpointRepository.findByCourse_CourseIdOrderByOrderNoAsc(courseId);
+
+        // RoutePoint는 IDENTITY 전략이라 saveAll이 각 행을 즉시 insert한다.
+        // flush 없이 두면 Hibernate 액션 큐 순서상 delete가 insert보다 늦게 실행되어
+        // (course_id, sequence) unique 제약과 충돌하므로 delete를 먼저 flush로 확정한다.
+        routePointRepository.deleteByCourse_CourseId(courseId);
+        routePointRepository.flush();
+
+        List<RoutePoint> routePoints = new ArrayList<>();
+        int sequence = 1;
+        for (Checkpoint checkpoint : checkpoints) {
+            routePoints.add(RoutePoint.builder()
+                    .course(course)
+                    .sequence(sequence++)
+                    .latitude(checkpoint.getLatitude())
+                    .longitude(checkpoint.getLongitude())
+                    .build());
+        }
+
+        routePointRepository.saveAll(routePoints);
+        return routePoints.stream().map(RoutePointResponse::from).toList();
     }
 }
