@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.tourismdata.contest.domain.course.dto.CheckpointResponse;
+import com.tourismdata.contest.domain.course.dto.CourseSummaryResponse;
 import com.tourismdata.contest.domain.course.dto.RoutePointResponse;
 import com.tourismdata.contest.domain.course.entity.Checkpoint;
 import com.tourismdata.contest.domain.course.entity.Course;
@@ -14,10 +15,15 @@ import com.tourismdata.contest.domain.course.entity.RoutePoint;
 import com.tourismdata.contest.domain.course.repository.CheckpointRepository;
 import com.tourismdata.contest.domain.course.repository.CourseRepository;
 import com.tourismdata.contest.domain.course.repository.RoutePointRepository;
+import com.tourismdata.contest.domain.story.repository.StoryEventRepository;
+import com.tourismdata.contest.domain.story.repository.VisitIngredientRepository;
+import com.tourismdata.contest.domain.visit.repository.VisitLocationLogRepository;
+import com.tourismdata.contest.domain.visit.repository.VisitRepository;
 import com.tourismdata.contest.external.tourapi.CheckpointTourApiClient;
 import com.tourismdata.contest.external.tourapi.dto.CheckpointTourApiPlaceDto;
 import com.tourismdata.contest.global.exception.CustomException;
 import com.tourismdata.contest.global.exception.ErrorCode;
+import com.tourismdata.contest.global.util.GeoUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -34,6 +40,10 @@ public class CourseAdminService {
     private final CourseRepository courseRepository;
     private final CheckpointRepository checkpointRepository;
     private final RoutePointRepository routePointRepository;
+    private final VisitRepository visitRepository;
+    private final VisitLocationLogRepository visitLocationLogRepository;
+    private final VisitIngredientRepository visitIngredientRepository;
+    private final StoryEventRepository storyEventRepository;
     private final CheckpointTourApiClient tourApiClient;
 
     public List<CheckpointResponse> importCheckpointsFromTourApi(Long courseId, String keyword) {
@@ -93,5 +103,72 @@ public class CourseAdminService {
 
         routePointRepository.saveAll(routePoints);
         return routePoints.stream().map(RoutePointResponse::from).toList();
+    }
+
+    // 기획 스토리라인 기준 5개 코스(수장/승려/승병장/무관/인조)를 실좌표 체크포인트와 함께
+    // 새로 심는 운영 도구. TourAPI 키워드 검색으로 채워뒀던 placeholder 데이터와는 완전히
+    // 무관한 실제 서비스 데이터라, 기존 코스/체크포인트/경로를 전부 지우고 재생성한다.
+    // 재실행해도 항상 같은 5개 코스로 초기화되도록 멱등하게 동작한다.
+    //
+    // ⚠️ 파괴적 작업: course/checkpoint에 FK로 걸린 visit/visit_location_log/visit_ingredient/
+    // story_event까지 전부 함께 지운다. 실사용자 탐방 기록이 쌓이기 전(서비스 오픈 전 1회성
+    // 데이터 세팅, 혹은 로컬 개발 환경 초기화) 용도로만 호출해야 한다.
+    public List<CourseSummaryResponse> seedStoryCourses() {
+        visitIngredientRepository.deleteAllInBatch();
+        storyEventRepository.deleteAllInBatch();
+        visitLocationLogRepository.deleteAllInBatch();
+        visitRepository.deleteAllInBatch();
+        routePointRepository.deleteAllInBatch();
+        checkpointRepository.deleteAllInBatch();
+        courseRepository.deleteAllInBatch();
+
+        List<CourseSummaryResponse> created = new ArrayList<>();
+        for (StoryCourseSeedData.CourseSeed courseSeed : StoryCourseSeedData.COURSES) {
+            List<StoryCourseSeedData.CheckpointSeed> checkpointSeeds = courseSeed.checkpoints();
+
+            // 실제 트레일 경로 데이터가 없어, 체크포인트 간 직선거리 합산으로 대략치를 낸다.
+            // 실제 도보 경로는 직선보다 길기 때문에 team이 나중에 실측치로 교체해야 한다.
+            int distanceM = (int) Math.round(totalStraightLineDistance(checkpointSeeds));
+            int estimatedMinutes = Math.max(1, (int) Math.ceil(distanceM / 50.0));
+
+            Course course = courseRepository.save(Course.builder()
+                    .title(courseSeed.title())
+                    .description(courseSeed.description())
+                    .thumbnailUrl(null)
+                    .distanceM(distanceM)
+                    .estimatedMinutes(estimatedMinutes)
+                    .difficulty(courseSeed.difficulty())
+                    .build());
+
+            List<Checkpoint> checkpoints = new ArrayList<>();
+            int orderNo = 1;
+            for (StoryCourseSeedData.CheckpointSeed checkpointSeed : checkpointSeeds) {
+                checkpoints.add(Checkpoint.builder()
+                        .course(course)
+                        .orderNo(orderNo++)
+                        .name(checkpointSeed.name())
+                        .latitude(checkpointSeed.latitude())
+                        .longitude(checkpointSeed.longitude())
+                        .guideContent(checkpointSeed.guideContent())
+                        .imageUrl(null)
+                        .build());
+            }
+            checkpointRepository.saveAll(checkpoints);
+
+            generateRouteFromCheckpoints(course.getCourseId());
+            created.add(CourseSummaryResponse.from(course));
+        }
+
+        return created;
+    }
+
+    private double totalStraightLineDistance(List<StoryCourseSeedData.CheckpointSeed> checkpoints) {
+        double total = 0;
+        for (int i = 1; i < checkpoints.size(); i++) {
+            StoryCourseSeedData.CheckpointSeed prev = checkpoints.get(i - 1);
+            StoryCourseSeedData.CheckpointSeed curr = checkpoints.get(i);
+            total += GeoUtils.distanceInMeters(prev.latitude(), prev.longitude(), curr.latitude(), curr.longitude());
+        }
+        return total;
     }
 }
