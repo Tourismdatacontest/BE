@@ -16,6 +16,11 @@ import lombok.RequiredArgsConstructor;
 // 전체 삭제 후 재생성하는 대신 이름 기준으로 있으면 건너뛰고 없으면 생성하는
 // 멱등한 upsert 방식을 쓴다 (Visit이 mode_id를 FK로 참조하므로 기존 데이터를
 // 함부로 지우지 않기 위함).
+//
+// CodeRabbit 지적 반영: findByName().orElseGet(save)는 원자적이지 않아 동시 요청 시
+// 중복 생성되거나(유니크 제약 없으면) duplicate-key로 실패할 수 있었다(유니크 제약 있으면
+// 복구 로직 부재). name에 유니크 제약을 걸고, ModeRepository.upsertIfAbsent()로
+// DB 레벨 INSERT ... ON DUPLICATE KEY UPDATE를 써서 경쟁 자체를 없앴다.
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -31,18 +36,14 @@ public class ModeAdminService {
     private final ModeRepository modeRepository;
 
     public List<ModeSummaryResponse> seedDefaultModes() {
-        Mode general = modeRepository.findByName(GENERAL_MODE_NAME)
-                .orElseGet(() -> modeRepository.save(Mode.builder()
-                        .name(GENERAL_MODE_NAME)
-                        .description(GENERAL_MODE_DESCRIPTION)
-                        .build()));
-
-        Mode story = modeRepository.findByName(STORY_MODE_NAME)
-                .orElseGet(() -> modeRepository.save(Mode.builder()
-                        .name(STORY_MODE_NAME)
-                        .description(STORY_MODE_DESCRIPTION)
-                        .build()));
-
+        Mode general = upsert(GENERAL_MODE_NAME, GENERAL_MODE_DESCRIPTION);
+        Mode story = upsert(STORY_MODE_NAME, STORY_MODE_DESCRIPTION);
         return List.of(ModeSummaryResponse.from(general), ModeSummaryResponse.from(story));
+    }
+
+    private Mode upsert(String name, String description) {
+        modeRepository.upsertIfAbsent(name, description);
+        return modeRepository.findByName(name)
+                .orElseThrow(() -> new IllegalStateException("Mode upsert 직후 조회 실패: name=" + name));
     }
 }
