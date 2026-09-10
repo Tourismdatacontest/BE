@@ -23,7 +23,7 @@ public class Mode {
     @Column(name = "mode_id")
     private Long modeId;
 
-    @Column(name = "name")
+    @Column(name = "name", unique = true)
     private String name;
 
     @Lob

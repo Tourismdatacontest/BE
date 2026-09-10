@@ -10,7 +10,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum ErrorCode {
 
-    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "COURSE_NOT_FOUND", "존재하지 않는 코스입니다.");
+    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "COURSE_NOT_FOUND", "존재하지 않는 코스입니다."),
+    MODE_NOT_FOUND(HttpStatus.NOT_FOUND, "MODE_NOT_FOUND", "존재하지 않는 모드입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
