@@ -23,7 +23,9 @@ import com.tourismdata.contest.global.util.GeoUtils;
 import lombok.RequiredArgsConstructor;
 
 // ST_DWithin 대신 GeoUtils(Haversine)로 nearbyCheckpoint 판정.
-// Developer B(Story) 연동 지점: checkNearbyCheckpoint()를 그대로 호출해서 이벤트 트리거에 쓰면 된다.
+// Story(Developer B) 연동 지점: recordLocation()의 응답(VisitLocationLogResponse.reachedCheckpoint)이
+// null이 아니면 그 checkpointId로 GET /visits/{visitId}/story/checkpoints/{checkpointId}를 호출하는
+// 구조로 확정됨 (Story 쪽이 checkpointId를 파라미터로 직접 받는 REST 오케스트레이션 방식으로 구현했기 때문).
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -48,10 +50,16 @@ public class LocationTrackingService {
                 .build();
         visitLocationLogRepository.save(log);
 
-        findNextNearbyCheckpoint(visit, request.latitude(), request.longitude())
-                .ifPresent(visit::moveTo);
+        Optional<Checkpoint> reachedCheckpoint = findNextNearbyCheckpoint(visit, request.latitude(), request.longitude());
+        reachedCheckpoint.ifPresent(visit::moveTo);
 
-        return VisitLocationLogResponse.from(log);
+        NearbyCheckpointResponse reachedCheckpointResponse = reachedCheckpoint
+                .map(checkpoint -> NearbyCheckpointResponse.of(checkpoint,
+                        GeoUtils.distanceInMeters(request.latitude(), request.longitude(),
+                                checkpoint.getLatitude(), checkpoint.getLongitude())))
+                .orElse(null);
+
+        return VisitLocationLogResponse.from(log, reachedCheckpointResponse);
     }
 
     @Transactional(readOnly = true)
@@ -59,14 +67,6 @@ public class LocationTrackingService {
         Checkpoint checkpoint = checkpointRepository.findById(checkpointId)
                 .orElseThrow(() -> new CustomException(ErrorCode.CHECKPOINT_NOT_FOUND));
         return CheckpointResponse.from(checkpoint);
-    }
-
-    @Transactional(readOnly = true)
-    public Optional<NearbyCheckpointResponse> checkNearbyCheckpoint(Visit visit, double latitude, double longitude) {
-        return findNextNearbyCheckpoint(visit, latitude, longitude)
-                .map(checkpoint -> NearbyCheckpointResponse.of(checkpoint,
-                        GeoUtils.distanceInMeters(latitude, longitude,
-                                checkpoint.getLatitude(), checkpoint.getLongitude())));
     }
 
     // 바로 다음 순번 체크포인트인지부터 확인하고, 그다음에 반경 안인지 판정한다.
