@@ -15,6 +15,7 @@ import com.tourismdata.contest.domain.course.entity.RoutePoint;
 import com.tourismdata.contest.domain.course.repository.CheckpointRepository;
 import com.tourismdata.contest.domain.course.repository.CourseRepository;
 import com.tourismdata.contest.domain.course.repository.RoutePointRepository;
+import com.tourismdata.contest.domain.nearby.repository.CourseRecommendedPlaceRepository;
 import com.tourismdata.contest.domain.story.repository.StoryEventRepository;
 import com.tourismdata.contest.domain.story.repository.VisitIngredientRepository;
 import com.tourismdata.contest.domain.visit.repository.VisitLocationLogRepository;
@@ -44,6 +45,7 @@ public class CourseAdminService {
     private final VisitLocationLogRepository visitLocationLogRepository;
     private final VisitIngredientRepository visitIngredientRepository;
     private final StoryEventRepository storyEventRepository;
+    private final CourseRecommendedPlaceRepository courseRecommendedPlaceRepository;
     private final CheckpointTourApiClient tourApiClient;
 
     public List<CheckpointResponse> importCheckpointsFromTourApi(Long courseId, String keyword) {
@@ -111,13 +113,15 @@ public class CourseAdminService {
     // 재실행해도 항상 같은 5개 코스로 초기화되도록 멱등하게 동작한다.
     //
     // ⚠️ 파괴적 작업: course/checkpoint에 FK로 걸린 visit/visit_location_log/visit_ingredient/
-    // story_event까지 전부 함께 지운다. 실사용자 탐방 기록이 쌓이기 전(서비스 오픈 전 1회성
-    // 데이터 세팅, 혹은 로컬 개발 환경 초기화) 용도로만 호출해야 한다.
+    // story_event/course_recommended_place(Nearby 도메인 큐레이션 테이블)까지 전부 함께 지운다.
+    // 실사용자 탐방 기록이 쌓이기 전(서비스 오픈 전 1회성 데이터 세팅, 혹은 로컬 개발 환경 초기화)
+    // 용도로만 호출해야 한다.
     public List<CourseSummaryResponse> seedStoryCourses() {
         visitIngredientRepository.deleteAllInBatch();
         storyEventRepository.deleteAllInBatch();
         visitLocationLogRepository.deleteAllInBatch();
         visitRepository.deleteAllInBatch();
+        courseRecommendedPlaceRepository.deleteAllInBatch();
         routePointRepository.deleteAllInBatch();
         checkpointRepository.deleteAllInBatch();
         courseRepository.deleteAllInBatch();
