@@ -10,13 +10,15 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "checkpoints")
+@Table(name = "checkpoints",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"course_id", "order_no"}))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Checkpoint {
