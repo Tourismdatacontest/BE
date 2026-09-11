@@ -33,6 +33,25 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class StoryService {
 
+    // 스토리라인 문서 기준 모든 코스 공통 프롤로그. 코스마다 달라지지 않음.
+    private static final String COMMON_PROLOGUE = """
+        사용자: "잠깐… 여기가 어디지?"
+        눈을 뜬 순간, 낯선 남한산성이 펼쳐졌다. 1636년, 병자호란이 한창인 남한산성.
+
+        그때, 낯선 존재가 나타났다.
+        사용자: "으악 도깨비다!"
+        도깨비: "도깨비…? 이게 나야? 나… 내가 누군지 기억이 안 나. 이 모습은 뭐지?"
+
+        노인: "응? 너는 이 시대의 사람이 아니구나."
+        노인: "원래의 시간으로 돌아가고 싶다면 전설의 백숙을 완성하거라."
+        노인: "산성 곳곳에 흩어진 재료를 찾아야 한다."
+        노인: (도깨비를 바라보며) "그리고 너도 함께 가거라. 잃어버린 기억을 찾게 될지도 모르니."
+
+        전설의 백숙을 완성하세요!
+        도깨비와 남한산성을 걸으며 백숙 재료를 모아보세요.
+        선택한 코스를 따라 이동하고 체크포인트에 도착하면 이야기가 이어집니다.
+        """;
+
     private final VisitRepository visitRepository;
     private final CheckpointRepository checkpointRepository;
     private final StoryEventRepository storyEventRepository;
@@ -42,7 +61,7 @@ public class StoryService {
     public StoryIntroResponse getStoryIntro(Long visitId) {
         Visit visit = getVisitOrThrow(visitId);
         Course course = visit.getCourse();
-        return new StoryIntroResponse(visitId, course.getTitle(), course.getDescription());
+        return new StoryIntroResponse(visitId, course.getTitle(), COMMON_PROLOGUE);
     }
 
     public StoryEventResponse getStoryEvent(Long visitId, Long checkpointId) {
