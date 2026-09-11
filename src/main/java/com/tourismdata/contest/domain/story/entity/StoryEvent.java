@@ -8,7 +8,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
@@ -16,6 +18,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
+import java.util.List;
+
+// ⚠️ 스토리라인 확정 후 발견: 한 체크포인트에서 재료를 2개 이상 동시에 줄 수 있음
+// (예: 1코스 서문 - 대파+양파). 원래 ERD의 단일 ingredient_id FK로는 표현이 안 돼서
+// story_event_ingredients 조인 테이블로 다대다 관계로 확장함.
 @Entity
 @Table(name = "story_events")
 @Getter
@@ -35,14 +43,18 @@ public class StoryEvent {
     @Column(name = "content")
     private String content;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ingredient_id")
-    private Ingredient ingredient;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "story_event_ingredients",
+        joinColumns = @JoinColumn(name = "story_event_id"),
+        inverseJoinColumns = @JoinColumn(name = "ingredient_id")
+    )
+    private List<Ingredient> ingredients = new ArrayList<>();
 
     @Builder
-    public StoryEvent(Checkpoint checkpoint, String content, Ingredient ingredient) {
+    public StoryEvent(Checkpoint checkpoint, String content, List<Ingredient> ingredients) {
         this.checkpoint = checkpoint;
         this.content = content;
-        this.ingredient = ingredient;
+        this.ingredients = (ingredients != null) ? ingredients : new ArrayList<>();
     }
 }
