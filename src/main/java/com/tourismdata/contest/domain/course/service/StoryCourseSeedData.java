@@ -97,7 +97,7 @@ final class StoryCourseSeedData {
             ),
             new CourseSeed(
                     "2코스 · 승려의 길",
-                    "병자호란 당시 성을 지켰던 승군의 흔적을 따라 행궁에서 숭렬전까지 걷는 코스.",
+                    "병자호란 당시 성을 지켰던 승군의 흔적을 따라 산성로터리에서 숭렬전까지 걷는 코스.",
                     Difficulty.EASY,
                     List.of(
                             new CheckpointSeed("산성로터리", 37.4771147, 127.1869876, GUIDE_SANSEONG_ROTARY),
@@ -121,7 +121,7 @@ final class StoryCourseSeedData {
             ),
             new CourseSeed(
                     "4코스 · 무관의 길",
-                    "남장대에서 지수당까지, 산성을 지키던 무관(장수)의 발자취를 따라 걷는 코스.",
+                    "남한산성역사박물관에서 개원사까지, 산성을 지키던 무관(장수)의 발자취를 따라 걷는 코스.",
                     Difficulty.NORMAL,
                     List.of(
                             new CheckpointSeed("남한산성역사박물관", 37.4761954, 127.1826459, GUIDE_HISTORY_MUSEUM),
@@ -135,7 +135,7 @@ final class StoryCourseSeedData {
             ),
             new CourseSeed(
                     "5코스 · 인조의 길",
-                    "지수당에서 동문까지, 47일간 성을 지키려 했던 왕 인조의 발자취를 따라 걷는 코스.",
+                    "남한산성역사문화관에서 동문까지, 47일간 성을 지키려 했던 왕 인조의 발자취를 따라 걷는 코스.",
                     Difficulty.HARD,
                     List.of(
                             new CheckpointSeed("남한산성역사문화관", 37.4761954, 127.1826459, GUIDE_HISTORY_MUSEUM),
