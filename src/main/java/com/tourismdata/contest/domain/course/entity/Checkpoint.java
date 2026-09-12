@@ -44,8 +44,11 @@ public class Checkpoint {
     @Column(name = "longitude")
     private Double longitude;
 
+    // @Lob만 쓰면 Hibernate가 length(기본 255)에 맞춰 MySQL TINYTEXT로 매핑해버려서
+    // 조금만 긴 안내문도 잘려나가는 문제가 있었음(실제로 겪음) - columnDefinition으로
+    // TEXT를 명시해서 고정.
     @Lob
-    @Column(name = "guide_content")
+    @Column(name = "guide_content", columnDefinition = "TEXT")
     private String guideContent;
 
     @Column(name = "image_url")
