@@ -13,9 +13,13 @@ import com.tourismdata.contest.domain.course.entity.Difficulty;
 // 체크포인트가 더 있다는 게 확인되어 추가함. 1코스는 Story 도메인(story_events)이
 // 이미 이 5개 체크포인트 순서에 맞춰 콘텐츠를 심어둔 상태라 그대로 유지 - 순서를
 // 바꾸면 이미 완성된 1코스 스토리 콘텐츠가 깨진다(체크포인트-콘텐츠가 순서 index로
-// 매칭되는 구조). 3코스의 "벌봉" 포함 여부는 스토리라인 문서상 최상단 요약과 상세
-// 장소 목록이 서로 달라 확정이 안 됐는데, 요약에 명시되어 있어 우선 포함해서 심음
-// (팀 확인 후 빼야 할 수도 있음).
+// 매칭되는 구조).
+//
+// v3 갱신(팀 "수정 후" 기획표 기준 반영): 3코스에서 벌봉 제거 확정(요약본엔 있었으나
+// 최종 "수정 후" 표에서 보류->삭제로 확정됨). 2/4/5코스는 이 기획표와 이미 일치함을
+// 확인. 1코스는 "수정 후" 표 기준으로는 산성로터리+역사박물관을 시작에, 산성로터리를
+// 엔딩에 추가해야 하지만(5개->8개), 위와 같은 이유로 Story 콘텐츠와의 충돌 때문에
+// 아직 보류 중 - 팀 논의 후 처리 예정.
 //
 // guideContent는 일반 모드에서 노출되는 장소별 짧은 역사 정보 카드용 텍스트다.
 // (도깨비 서사 등 스토리 모드 콘텐츠는 Story 도메인의 story_events.content가 따로 담당)
@@ -55,8 +59,6 @@ final class StoryCourseSeedData {
             "남한산성 축성 당시부터 승군이 주둔했던 사찰 중 하나.";
     private static final String GUIDE_DONGJANGDAE =
             "산성의 동쪽을 지키던 장대(지휘소)가 있던 자리.";
-    private static final String GUIDE_BEOLBONG =
-            "산성 동쪽 바깥의 봉우리로, 병자호란 당시 청군이 이 봉우리에 대포를 배치해 성 안을 공격했다고 전해진다.";
     private static final String GUIDE_NAMJANGDAE =
             "산성의 남쪽을 지키던 장대(지휘소)가 있던 자리.";
     private static final String GUIDE_JE3NAMONGSEONG =
@@ -108,14 +110,13 @@ final class StoryCourseSeedData {
             ),
             new CourseSeed(
                     "3코스 · 승병장의 길",
-                    "장경사에서 벌봉까지, 산성 동쪽을 지키던 승병장의 흔적을 따라 걷는 코스.",
+                    "세계유산센터에서 장경사까지, 산성 동쪽을 지키던 승병장의 흔적을 따라 걷는 코스.",
                     Difficulty.HARD,
                     List.of(
                             new CheckpointSeed("남한산성세계유산센터", 37.4766092, 127.1883749, GUIDE_WORLD_HERITAGE_CENTER),
                             new CheckpointSeed("동장대터", 37.4796437, 127.1984781, GUIDE_DONGJANGDAE),
                             new CheckpointSeed("장경사신지옹성", 37.476563, 127.200188, GUIDE_JANGGYEONGSA_SINJI_ONGSEONG),
-                            new CheckpointSeed("장경사", 37.4753157, 127.1976126, GUIDE_JANGGYEONGSA),
-                            new CheckpointSeed("벌봉", 37.4828565, 127.2026412, GUIDE_BEOLBONG)
+                            new CheckpointSeed("장경사", 37.4753157, 127.1976126, GUIDE_JANGGYEONGSA)
                     )
             ),
             new CourseSeed(
