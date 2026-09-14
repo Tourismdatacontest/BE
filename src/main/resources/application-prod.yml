@@ -21,6 +21,7 @@ spring:
 external:
   tourapi:
     base-url: https://apis.data.go.kr/B551011/KorService2
+    photo-base-url: https://apis.data.go.kr/B551011/PhotoGalleryService1
     service-key: ${TOURAPI_SERVICE_KEY}
   kakao-local:
     base-url: https://dapi.kakao.com/v2/local

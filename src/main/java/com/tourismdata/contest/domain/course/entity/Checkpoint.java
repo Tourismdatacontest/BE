@@ -65,4 +65,14 @@ public class Checkpoint {
         this.guideContent = guideContent;
         this.imageUrl = imageUrl;
     }
+
+    /** TourAPI 연동(관리자 도구)으로 조회한 개요/사진으로 보강한다. 못 찾은 값(null/빈 문자열)은 기존 값을 유지한다. */
+    public void enrichFromTourApi(String guideContent, String imageUrl) {
+        if (guideContent != null && !guideContent.isBlank()) {
+            this.guideContent = guideContent;
+        }
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            this.imageUrl = imageUrl;
+        }
+    }
 }
