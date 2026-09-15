@@ -40,7 +40,7 @@ public class StoryEvent {
     private Checkpoint checkpoint;
 
     @Lob
-    @Column(name = "content")
+    @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
     @ManyToMany(fetch = FetchType.LAZY)
