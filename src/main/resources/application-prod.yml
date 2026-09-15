@@ -1,13 +1,18 @@
+server:
+  port: ${PORT:8080}
+
 spring:
   datasource:
-    url: ${DATABASE_URL}
-    username: ${DATABASE_USERNAME}
-    password: ${DATABASE_PASSWORD}
+    url: jdbc:mysql://${MYSQLHOST}:${MYSQLPORT}/${MYSQLDATABASE}?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: ${MYSQLUSER}
+    password: ${MYSQLPASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      # ⚠️ 마이그레이션 도구(Flyway 등) 없는 상태라 update로 둠. 첫 배포 때 스키마 자동
+      # 생성됨. 나중에 마이그레이션 도구 도입하면 validate로 전환 권장.
+      ddl-auto: update
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
@@ -15,13 +20,16 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT:6379}
+      host: ${REDISHOST}
+      port: ${REDISPORT:6379}
 
 external:
   tourapi:
     base-url: https://apis.data.go.kr/B551011/KorService2
     service-key: ${TOURAPI_SERVICE_KEY}
+    map-x: 127.1815
+    map-y: 37.4788
+    radius-meters: 2000
   kakao-local:
     base-url: https://dapi.kakao.com/v2/local
     rest-api-key: ${KAKAO_REST_API_KEY}
@@ -29,6 +37,7 @@ external:
 logging:
   level:
     com.tourismdata.contest: INFO
+
 kakao:
   login:
     client-id: ${KAKAO_LOGIN_CLIENT_ID}
