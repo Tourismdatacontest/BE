@@ -10,6 +10,8 @@ import com.tourismdata.contest.domain.course.repository.RoutePointRepository;
 import com.tourismdata.contest.domain.story.dto.StoryEventResponse;
 import com.tourismdata.contest.domain.story.repository.StoryEventRepository;
 import com.tourismdata.contest.domain.sync.dto.OfflinePackageResponse;
+import com.tourismdata.contest.global.exception.CustomException;
+import com.tourismdata.contest.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +33,7 @@ public class OfflinePackageService {
 
     public OfflinePackageResponse getOfflinePackage(Long courseId) {
         Course course = courseRepository.findById(courseId)
-            .orElseThrow(() -> new IllegalArgumentException("코스를 찾을 수 없습니다. courseId=" + courseId));
+            .orElseThrow(() -> new CustomException(ErrorCode.COURSE_NOT_FOUND));
 
         var routePoints = routePointRepository.findByCourse_CourseIdOrderBySequenceAsc(courseId).stream()
             .map(RoutePointResponse::from)
