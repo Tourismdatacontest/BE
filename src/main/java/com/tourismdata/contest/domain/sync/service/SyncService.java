@@ -7,6 +7,8 @@ import com.tourismdata.contest.domain.visit.entity.Visit;
 import com.tourismdata.contest.domain.visit.entity.VisitLocationLog;
 import com.tourismdata.contest.domain.visit.repository.VisitLocationLogRepository;
 import com.tourismdata.contest.domain.visit.repository.VisitRepository;
+import com.tourismdata.contest.global.exception.CustomException;
+import com.tourismdata.contest.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +31,7 @@ public class SyncService {
 
     public List<VisitLocationLogResponse> syncLocations(Long visitId, LocationBulkSyncRequest request) {
         Visit visit = visitRepository.findById(visitId)
-            .orElseThrow(() -> new IllegalArgumentException("탐방 세션을 찾을 수 없습니다. visitId=" + visitId));
+            .orElseThrow(() -> new CustomException(ErrorCode.VISIT_NOT_FOUND));
 
         List<VisitLocationLog> logs = request.locations().stream()
             .map(loc -> toLog(visit, loc))

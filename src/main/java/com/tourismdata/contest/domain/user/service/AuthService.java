@@ -8,6 +8,8 @@ import com.tourismdata.contest.domain.visit.repository.VisitRepository;
 import com.tourismdata.contest.external.kakaologin.KakaoLoginClient;
 import com.tourismdata.contest.external.kakaologin.dto.KakaoTokenResponse;
 import com.tourismdata.contest.external.kakaologin.dto.KakaoUserProfileResponse;
+import com.tourismdata.contest.global.exception.CustomException;
+import com.tourismdata.contest.global.exception.ErrorCode;
 import com.tourismdata.contest.global.security.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -62,8 +64,7 @@ public class AuthService {
         }
         for (Long visitId : visitIds) {
             Visit visit = visitRepository.findById(visitId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                    "탐방 세션을 찾을 수 없습니다. visitId=" + visitId));
+                .orElseThrow(() -> new CustomException(ErrorCode.VISIT_NOT_FOUND));
             visit.linkUser(user);
         }
     }

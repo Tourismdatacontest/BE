@@ -15,6 +15,8 @@ import com.tourismdata.contest.domain.story.repository.StoryEventRepository;
 import com.tourismdata.contest.domain.story.repository.VisitIngredientRepository;
 import com.tourismdata.contest.domain.visit.entity.Visit;
 import com.tourismdata.contest.domain.visit.repository.VisitRepository;
+import com.tourismdata.contest.global.exception.CustomException;
+import com.tourismdata.contest.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,10 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
  * 스토리 모드 서비스.
  *
  * ⚠️ checkpointId는 A의 LocationTrackingService(GPS 근접 판정)가 아니라 파라미터로 직접 받는
- * 구조. 실제 GPS 트리거 연동은 A 작업 완료 후 상위(LocationController 등)에서 연결하면 됨.
- * ⚠️ visitId-User 연결(로그인 시점 보상 귀속)은 A의 Kakao OAuth 작업 완료 후 별도 반영 필요.
- * ⚠️ 예외 처리는 우선 IllegalArgumentException으로 처리 - 프로젝트 공통 CustomException/
- * ErrorCode 체계가 갖춰지면 그쪽으로 교체 필요 (global/exception 패키지 참고).
+ * 구조. 실제 GPS 트리거 연동은 A의 LocationTrackingService 응답(reachedCheckpoint)을
+ * 프론트가 받아서 checkpointId로 이 API를 호출하는 방식으로 확정됨.
  */
 @Service
 @RequiredArgsConstructor
@@ -67,8 +67,7 @@ public class StoryService {
     public StoryEventResponse getStoryEvent(Long visitId, Long checkpointId) {
         getVisitOrThrow(visitId); // visit 존재 검증
         StoryEvent event = storyEventRepository.findFirstByCheckpoint_CheckpointId(checkpointId)
-            .orElseThrow(() -> new IllegalArgumentException(
-                "스토리 이벤트를 찾을 수 없습니다. checkpointId=" + checkpointId));
+            .orElseThrow(() -> new CustomException(ErrorCode.STORY_EVENT_NOT_FOUND));
         return StoryEventResponse.from(event);
     }
 
@@ -77,8 +76,7 @@ public class StoryService {
     public VisitIngredientResponse acquireIngredient(Long visitId, Long ingredientId) {
         Visit visit = getVisitOrThrow(visitId);
         Ingredient ingredient = ingredientRepository.findById(ingredientId)
-            .orElseThrow(() -> new IllegalArgumentException(
-                "재료를 찾을 수 없습니다. ingredientId=" + ingredientId));
+            .orElseThrow(() -> new CustomException(ErrorCode.INGREDIENT_NOT_FOUND));
 
         VisitIngredientId id = new VisitIngredientId(visitId, ingredientId);
         VisitIngredient visitIngredient = visitIngredientRepository.findById(id)
@@ -111,7 +109,6 @@ public class StoryService {
 
     private Visit getVisitOrThrow(Long visitId) {
         return visitRepository.findById(visitId)
-            .orElseThrow(() -> new IllegalArgumentException(
-                "탐방 세션을 찾을 수 없습니다. visitId=" + visitId));
+            .orElseThrow(() -> new CustomException(ErrorCode.VISIT_NOT_FOUND));
     }
 }
