@@ -29,8 +29,11 @@ public class Course extends BaseTimeEntity {
     @Column(name = "title")
     private String title;
 
+    // @Lob만 쓰면 Hibernate가 length(기본 255)에 맞춰 MySQL TINYTEXT로 매핑해버려서
+    // 조금만 긴 설명도 잘려나가는 문제가 있었음(실제로 Checkpoint.guideContent에서
+    // 겪음) - columnDefinition으로 TEXT를 명시해서 고정.
     @Lob
-    @Column(name = "description")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "thumbnail_url")

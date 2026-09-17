@@ -1,7 +1,10 @@
 package com.tourismdata.contest.domain.course.service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +24,8 @@ import com.tourismdata.contest.domain.story.repository.VisitIngredientRepository
 import com.tourismdata.contest.domain.visit.repository.VisitLocationLogRepository;
 import com.tourismdata.contest.domain.visit.repository.VisitRepository;
 import com.tourismdata.contest.external.tourapi.CheckpointTourApiClient;
+import com.tourismdata.contest.external.tourapi.PhotoGalleryClient;
+import com.tourismdata.contest.external.tourapi.dto.CheckpointTourApiDetailDto;
 import com.tourismdata.contest.external.tourapi.dto.CheckpointTourApiPlaceDto;
 import com.tourismdata.contest.global.exception.CustomException;
 import com.tourismdata.contest.global.exception.ErrorCode;
@@ -47,6 +52,9 @@ public class CourseAdminService {
     private final StoryEventRepository storyEventRepository;
     private final CourseRecommendedPlaceRepository courseRecommendedPlaceRepository;
     private final CheckpointTourApiClient tourApiClient;
+    private final PhotoGalleryClient photoGalleryClient;
+
+    private static final String REGION_ADDRESS_HINT = "남한산성";
 
     public List<CheckpointResponse> importCheckpointsFromTourApi(Long courseId, String keyword) {
         Course course = courseRepository.findById(courseId)
@@ -164,6 +172,93 @@ public class CourseAdminService {
         }
 
         return created;
+    }
+
+    // 한국관광공사 TourAPI(KorService2 상세조회 + PhotoGalleryService1)로 체크포인트
+    // guideContent/imageUrl을 보강하는 운영 도구. 이름이 같은 체크포인트(코스끼리 겹치는
+    // 물리적 장소)는 한 번만 조회하도록 캐싱한다. 매칭 안 되는 체크포인트(성문류, 옹성 등
+    // 마이너한 유적)는 기존 값을 그대로 둔다 - 개별 호출 실패도 전체를 막지 않도록
+    // 하나씩 방어적으로 처리한다.
+    public List<CheckpointResponse> enrichCheckpointsFromTourApi() {
+        List<Checkpoint> checkpoints = checkpointRepository.findAll();
+        Map<String, TourApiEnrichment> cache = new HashMap<>();
+
+        for (Checkpoint checkpoint : checkpoints) {
+            TourApiEnrichment enrichment = cache.computeIfAbsent(checkpoint.getName(), this::fetchEnrichment);
+            checkpoint.enrichFromTourApi(enrichment.overview(), enrichment.imageUrl());
+        }
+
+        return checkpoints.stream().map(CheckpointResponse::from).toList();
+    }
+
+    private TourApiEnrichment fetchEnrichment(String checkpointName) {
+        try {
+            String coreName = stripParenthetical(checkpointName);
+            Optional<CheckpointTourApiPlaceDto> match = findBestMatch(coreName);
+            if (match.isEmpty()) {
+                return TourApiEnrichment.EMPTY;
+            }
+
+            CheckpointTourApiPlaceDto place = match.get();
+            String overview = null;
+            String imageUrl = place.firstImage();
+
+            try {
+                Optional<CheckpointTourApiDetailDto> detail = tourApiClient.fetchDetail(place.contentId());
+                if (detail.isPresent()) {
+                    overview = detail.get().overview();
+                    if (isBlank(imageUrl)) {
+                        imageUrl = detail.get().firstImage();
+                    }
+                }
+            } catch (Exception e) {
+                // detailCommon2 실패해도 검색 결과로 얻은 정보만으로 계속 진행
+            }
+
+            if (isBlank(imageUrl)) {
+                try {
+                    imageUrl = photoGalleryClient.searchFirstImage(coreName).orElse(null);
+                } catch (Exception e) {
+                    // 사진 갤러리 조회 실패는 무시하고 사진 없이 진행
+                }
+            }
+
+            return new TourApiEnrichment(overview, imageUrl);
+        } catch (Exception e) {
+            // 이 체크포인트는 보강 실패 - 기존 값 유지
+            return TourApiEnrichment.EMPTY;
+        }
+    }
+
+    // "남한산성"을 붙이지 않은 이름과 붙인 이름 둘 다 시도하고, 주소에 "남한산성"이 포함된
+    // 결과만 채택한다 (예: "국청사"로만 검색하면 부산의 동명 사찰이 걸릴 수 있음).
+    private Optional<CheckpointTourApiPlaceDto> findBestMatch(String coreName) {
+        for (String query : List.of(coreName, REGION_ADDRESS_HINT + " " + coreName)) {
+            try {
+                Optional<CheckpointTourApiPlaceDto> match = tourApiClient.searchKeyword(query).stream()
+                        .filter(place -> place.addr1() != null && place.addr1().contains(REGION_ADDRESS_HINT))
+                        .findFirst();
+                if (match.isPresent()) {
+                    return match;
+                }
+            } catch (Exception e) {
+                // 이 쿼리 변형은 실패 - 다음 변형 시도
+            }
+        }
+        return Optional.empty();
+    }
+
+    private static String stripParenthetical(String name) {
+        int idx = name.indexOf('(');
+        return idx > 0 ? name.substring(0, idx).trim() : name;
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private record TourApiEnrichment(String overview, String imageUrl) {
+        static final TourApiEnrichment EMPTY = new TourApiEnrichment(null, null);
     }
 
     private double totalStraightLineDistance(List<StoryCourseSeedData.CheckpointSeed> checkpoints) {

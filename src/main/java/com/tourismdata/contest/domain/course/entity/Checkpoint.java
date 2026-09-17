@@ -44,8 +44,11 @@ public class Checkpoint {
     @Column(name = "longitude")
     private Double longitude;
 
+    // @Lob만 쓰면 Hibernate가 length(기본 255)에 맞춰 MySQL TINYTEXT로 매핑해버려서
+    // 조금만 긴 안내문도 잘려나가는 문제가 있었음(실제로 겪음) - columnDefinition으로
+    // TEXT를 명시해서 고정.
     @Lob
-    @Column(name = "guide_content")
+    @Column(name = "guide_content", columnDefinition = "TEXT")
     private String guideContent;
 
     @Column(name = "image_url")
@@ -61,5 +64,15 @@ public class Checkpoint {
         this.longitude = longitude;
         this.guideContent = guideContent;
         this.imageUrl = imageUrl;
+    }
+
+    /** TourAPI 연동(관리자 도구)으로 조회한 개요/사진으로 보강한다. 못 찾은 값(null/빈 문자열)은 기존 값을 유지한다. */
+    public void enrichFromTourApi(String guideContent, String imageUrl) {
+        if (guideContent != null && !guideContent.isBlank()) {
+            this.guideContent = guideContent;
+        }
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            this.imageUrl = imageUrl;
+        }
     }
 }

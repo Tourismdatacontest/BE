@@ -41,4 +41,11 @@ public class CourseAdminController {
     public List<CourseSummaryResponse> seedStoryCourses() {
         return courseAdminService.seedStoryCourses();
     }
+
+    // 한국관광공사 TourAPI(상세조회+관광사진)로 기존 체크포인트의 guideContent/imageUrl을
+    // 보강한다. 매칭되는 체크포인트만 채워지고, 안 되는 건 기존 값 그대로 유지된다.
+    @PostMapping("/checkpoints/enrich-from-tourapi")
+    public List<CheckpointResponse> enrichCheckpointsFromTourApi() {
+        return courseAdminService.enrichCheckpointsFromTourApi();
+    }
 }
