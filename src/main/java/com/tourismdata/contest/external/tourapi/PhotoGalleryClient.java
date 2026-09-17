@@ -30,11 +30,21 @@ public class PhotoGalleryClient {
      * 마이너한 장소는 결과가 아예 없는 경우가 많아 Optional로 감싼다.
      */
     public Optional<String> searchFirstImage(String keyword) {
+        return search(keyword, 1).stream()
+                .findFirst()
+                .map(GalleryItem::galWebImageUrl);
+    }
+
+    /**
+     * 키워드로 관광사진을 검색해 결과 목록을 그대로 반환한다 (실시간 호출, 저장하지 않음).
+     * 홈 화면 배너처럼 매 요청마다 살아있는 공공데이터를 그대로 보여줘야 하는 용도.
+     */
+    public List<GalleryItem> search(String keyword, int numOfRows) {
         GalleryResponse response = restClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/gallerySearchList1")
                         .queryParam("serviceKey", serviceKey)
-                        .queryParam("numOfRows", 1)
+                        .queryParam("numOfRows", numOfRows)
                         .queryParam("pageNo", 1)
                         .queryParam("MobileOS", "ETC")
                         .queryParam("MobileApp", "TourismdataContest")
@@ -44,9 +54,7 @@ public class PhotoGalleryClient {
                 .retrieve()
                 .body(GalleryResponse.class);
 
-        return extractItems(response).stream()
-                .findFirst()
-                .map(GalleryItem::galWebImageUrl);
+        return extractItems(response);
     }
 
     private static List<GalleryItem> extractItems(GalleryResponse response) {
@@ -77,6 +85,6 @@ public class PhotoGalleryClient {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    record GalleryItem(String galTitle, String galWebImageUrl) {
+    public record GalleryItem(String galContentId, String galTitle, String galWebImageUrl) {
     }
 }
