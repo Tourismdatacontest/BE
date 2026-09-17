@@ -37,8 +37,8 @@ logging:
 
 kakao:
   login:
-    client-id: "f331fa80a6575b97da405185c60a04e2"
-    client-secret: "cxqbghEDVOD0KpF7IYSl3KBxheF4BKTX"
+    client-id: ${KAKAO_LOGIN_CLIENT_ID}
+    client-secret: ${KAKAO_LOGIN_CLIENT_SECRET}
     redirect-uri: ${KAKAO_LOGIN_REDIRECT_URI:http://localhost:8080/oauth/kakao/callback}
 
 jwt:
