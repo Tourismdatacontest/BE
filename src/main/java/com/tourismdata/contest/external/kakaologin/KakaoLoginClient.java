@@ -26,11 +26,13 @@ import java.nio.charset.StandardCharsets;
  * 배포 전 근본 원인 조사 필요 - curl 바이너리 없는 환경(minimal 컨테이너 등)에선 동작
  * 안 함.
  *
- * ⚠️ curl은 HTTP 에러 상태코드(4xx/5xx)만으로는 non-zero exit code를 반환하지 않음
- * (네트워크 레벨 실패 - DNS, 연결 끊김 등에서만 non-zero). 즉 카카오가 에러 JSON을
- * 200 이외 상태로 내려줘도 curl 자체는 성공 취급할 수 있어, 실패 원인 진단을 위해
- * exitCode/stdout/stderr를 전부 로그로 남김. 클라이언트 응답은 CustomException으로
- * 통일된 형식만 내려가고, 상세 원인은 서버 로그에서 확인.
+ * ⚠️⚠️ 심각한 버그였음(2026-09-20 발견/수정): 카카오가 에러 응답
+ * ({"error":"invalid_grant",...} 등)을 돌려줘도, 그 JSON이 KakaoTokenResponse/
+ * KakaoUserProfileResponse의 필드명과 안 겹치면 Jackson이 예외를 던지지 않고 모든
+ * 필드가 null인 객체로 "파싱 성공" 처리해버림. 이 null accessToken/id가 그대로
+ * AuthService까지 흘러가면 kakaoSubject가 String.valueOf(null) == "null" 문자열로
+ * 고정되어, 가짜 code로도 누구나 로그인(또는 그 "null" 계정 재사용)이 가능했음.
+ * 그래서 파싱 성공 여부와 별개로 핵심 필드(accessToken, id) null 여부를 직접 검증함.
  */
 @Component
 public class KakaoLoginClient {
@@ -57,12 +59,20 @@ public class KakaoLoginClient {
                 "-d", "code=" + code
         ), "카카오 토큰 교환");
 
+        KakaoTokenResponse response;
         try {
-            return objectMapper.readValue(output, KakaoTokenResponse.class);
+            response = objectMapper.readValue(output, KakaoTokenResponse.class);
         } catch (Exception e) {
             log.error("카카오 토큰 교환 응답 파싱 실패. raw response={}", output, e);
             throw new CustomException(ErrorCode.KAKAO_LOGIN_FAILED);
         }
+
+        if (response.accessToken() == null || response.accessToken().isBlank()) {
+            log.error("카카오 토큰 교환 실패로 판단(access_token 없음, 잘못된 code로 추정). raw response={}", output);
+            throw new CustomException(ErrorCode.KAKAO_LOGIN_FAILED);
+        }
+
+        return response;
     }
 
     public KakaoUserProfileResponse fetchProfile(String kakaoAccessToken) {
@@ -71,12 +81,20 @@ public class KakaoLoginClient {
                 "-H", "Authorization: Bearer " + kakaoAccessToken
         ), "카카오 프로필 조회");
 
+        KakaoUserProfileResponse response;
         try {
-            return objectMapper.readValue(output, KakaoUserProfileResponse.class);
+            response = objectMapper.readValue(output, KakaoUserProfileResponse.class);
         } catch (Exception e) {
             log.error("카카오 프로필 조회 응답 파싱 실패. raw response={}", output, e);
             throw new CustomException(ErrorCode.KAKAO_LOGIN_FAILED);
         }
+
+        if (response.id() == null) {
+            log.error("카카오 프로필 조회 실패로 판단(id 없음). raw response={}", output);
+            throw new CustomException(ErrorCode.KAKAO_LOGIN_FAILED);
+        }
+
+        return response;
     }
 
     private String runCurl(ProcessBuilder pb, String actionLabel) {
