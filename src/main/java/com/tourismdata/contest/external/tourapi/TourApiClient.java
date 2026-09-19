@@ -4,6 +4,7 @@ import com.tourismdata.contest.domain.nearby.entity.PlaceType;
 import com.tourismdata.contest.external.tourapi.dto.TourApiLocationResponse;
 import com.tourismdata.contest.external.tourapi.dto.TourApiPlaceDto;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -11,6 +12,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -32,8 +34,16 @@ public class TourApiClient {
     private static final String CONTENT_TYPE_FOOD = "39";
     private static final String CAT3_CAFE = "A05020900";
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = createRestTemplate();
     private final JsonMapper objectMapper = JsonMapper.builder().build();
+
+    // 타임아웃이 없으면 외부 API 지연 시 ETL 호출이 무한정 대기한다.
+    private static RestTemplate createRestTemplate() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(3));
+        factory.setReadTimeout(Duration.ofSeconds(5));
+        return new RestTemplate(factory);
+    }
 
     @Value("${external.tourapi.base-url}")
     private String baseUrl;
