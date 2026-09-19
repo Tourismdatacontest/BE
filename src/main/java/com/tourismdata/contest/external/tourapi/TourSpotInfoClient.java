@@ -1,9 +1,12 @@
 package com.tourismdata.contest.external.tourapi;
 
+import java.net.http.HttpClient;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -21,7 +24,11 @@ public class TourSpotInfoClient {
 
     public TourSpotInfoClient(@Value("${external.tourapi.base-url}") String baseUrl,
                               @Value("${external.tourapi.service-key}") String serviceKey) {
-        this.restClient = RestClient.create(baseUrl);
+        // 타임아웃이 없으면 API 지연 시 HomeIntroService의 synchronized 갱신이 계속 막힌다.
+        HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+        requestFactory.setReadTimeout(Duration.ofSeconds(5));
+        this.restClient = RestClient.builder().baseUrl(baseUrl).requestFactory(requestFactory).build();
         this.serviceKey = serviceKey;
     }
 
