@@ -1,23 +1,28 @@
 package com.tourismdata.contest.domain.visit.controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tourismdata.contest.domain.visit.dto.VisitCreateRequest;
 import com.tourismdata.contest.domain.visit.dto.VisitResponse;
 import com.tourismdata.contest.domain.visit.dto.VisitResultResponse;
+import com.tourismdata.contest.domain.visit.dto.VisitSummaryResponse;
 import com.tourismdata.contest.domain.visit.service.VisitService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-// POST /visits, GET /visits/{visitId}, POST /visits/{visitId}/complete, GET /visits/{visitId}/result
+// POST /visits, GET /visits?userId=, GET /visits/{visitId},
+// POST /visits/{visitId}/complete, GET /visits/{visitId}/result
 @RestController
 @RequestMapping("/visits")
 @RequiredArgsConstructor
@@ -29,6 +34,13 @@ public class VisitController {
     @ResponseStatus(HttpStatus.CREATED)
     public VisitResponse createVisit(@Valid @RequestBody VisitCreateRequest request) {
         return visitService.createVisit(request);
+    }
+
+    // 로그인 유저의 탐방 기록 목록 (마이페이지 등). 게스트로 진행해 계정에 연결 안 된
+    // 방문은 조회 안 됨 - 스토리 모드 보상 시점 로그인 시 User에 연결된 것만 대상.
+    @GetMapping
+    public List<VisitSummaryResponse> getVisitsByUser(@RequestParam Long userId) {
+        return visitService.getVisitsByUser(userId);
     }
 
     @GetMapping("/{visitId}")

@@ -16,6 +16,7 @@ import com.tourismdata.contest.domain.visit.dto.CollectedIngredientResponse;
 import com.tourismdata.contest.domain.visit.dto.VisitCreateRequest;
 import com.tourismdata.contest.domain.visit.dto.VisitResponse;
 import com.tourismdata.contest.domain.visit.dto.VisitResultResponse;
+import com.tourismdata.contest.domain.visit.dto.VisitSummaryResponse;
 import com.tourismdata.contest.domain.visit.entity.Visit;
 import com.tourismdata.contest.domain.visit.entity.VisitLocationLog;
 import com.tourismdata.contest.domain.visit.entity.VisitStatus;
@@ -58,6 +59,14 @@ public class VisitService {
     @Transactional(readOnly = true)
     public VisitResponse getVisit(Long visitId) {
         return VisitResponse.from(findVisitOrThrow(visitId));
+    }
+
+    /** 로그인한 유저의 탐방 기록 목록 - 마이페이지 등에서 사용. 최신 시작 순 정렬. */
+    @Transactional(readOnly = true)
+    public List<VisitSummaryResponse> getVisitsByUser(Long userId) {
+        return visitRepository.findByUser_UserIdOrderByStartedAtDesc(userId).stream()
+                .map(VisitSummaryResponse::from)
+                .toList();
     }
 
     public VisitResponse completeVisit(Long visitId) {
