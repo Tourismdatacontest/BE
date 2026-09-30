@@ -14,6 +14,7 @@ import com.tourismdata.contest.domain.story.entity.VisitIngredient;
 import com.tourismdata.contest.domain.story.repository.VisitIngredientRepository;
 import com.tourismdata.contest.domain.visit.dto.CollectedIngredientResponse;
 import com.tourismdata.contest.domain.visit.dto.VisitCreateRequest;
+import com.tourismdata.contest.domain.visit.dto.VisitLocationLogResponse;
 import com.tourismdata.contest.domain.visit.dto.VisitResponse;
 import com.tourismdata.contest.domain.visit.dto.VisitResultResponse;
 import com.tourismdata.contest.domain.visit.dto.VisitSummaryResponse;
@@ -80,6 +81,15 @@ public class VisitService {
                 .formatted(visit.getCourse().getTitle(), visit.getVisitedCheckpointCount());
         visit.complete(summary);
         return VisitResponse.from(visit);
+    }
+
+    // 마이페이지 "다시보기" - 탐방 중 기록된 좌표를 시간순 그대로 반환해 프론트가 지도에 경로로 그림.
+    @Transactional(readOnly = true)
+    public List<VisitLocationLogResponse> getLocationLogs(Long visitId) {
+        findVisitOrThrow(visitId);
+        return visitLocationLogRepository.findByVisit_VisitIdOrderByRecordedAtAscLogIdAsc(visitId).stream()
+                .map(VisitLocationLogResponse::from)
+                .toList();
     }
 
     @Transactional(readOnly = true)

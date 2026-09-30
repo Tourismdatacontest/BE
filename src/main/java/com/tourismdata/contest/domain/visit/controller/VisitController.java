@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.tourismdata.contest.domain.visit.dto.VisitCreateRequest;
+import com.tourismdata.contest.domain.visit.dto.VisitLocationLogResponse;
 import com.tourismdata.contest.domain.visit.dto.VisitResponse;
 import com.tourismdata.contest.domain.visit.dto.VisitResultResponse;
 import com.tourismdata.contest.domain.visit.dto.VisitSummaryResponse;
@@ -56,5 +57,11 @@ public class VisitController {
     @GetMapping("/{visitId}/result")
     public VisitResultResponse getVisitResult(@PathVariable Long visitId) {
         return visitService.getVisitResult(visitId);
+    }
+
+    // 마이페이지 다시보기용 - 탐방 중 기록된 좌표를 시간순으로 반환 (지도에 경로 그리기)
+    @GetMapping("/{visitId}/locations")
+    public List<VisitLocationLogResponse> getVisitLocations(@PathVariable Long visitId) {
+        return visitService.getLocationLogs(visitId);
     }
 }
