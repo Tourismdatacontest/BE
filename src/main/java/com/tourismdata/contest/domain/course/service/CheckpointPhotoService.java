@@ -26,9 +26,20 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class CheckpointPhotoService {
 
-    private static final Map<String, List<String>> CURATED_BY_CHECKPOINT_NAME = Map.of(
+    private static final Map<String, List<String>> CURATED_BY_CHECKPOINT_NAME = Map.ofEntries(
             // 서문(우익문): 갤러리 #101, #102, #179
-            "서문(우익문)", List.of("1204331", "1204343", "2569738")
+            Map.entry("서문(우익문)", List.of("1204331", "1204343", "2569738")),
+            // 프론트 요청(주호연) - 아래 5곳은 갤러리 번호 그대로 매핑
+            // 국청사: #4, #8
+            Map.entry("국청사", List.of("1203468", "1203507")),
+            // 남한산성행궁: #75, #137
+            Map.entry("행궁", List.of("1204202", "1984804")),
+            // 청량대(수어장대): #92, #93, #97, #98, #100
+            Map.entry("수어장대", List.of("1204256", "1204274", "1204283", "1204289", "1204294")),
+            // 지화문(남문): #150, #151
+            Map.entry("남문(지화문)", List.of("2540319", "2569309")),
+            // 전승문(북문): #154, #155, #156, #157, #159
+            Map.entry("북문(전승문)", List.of("2569314", "2569315", "2569322", "2569324", "2569328"))
     );
 
     private static final String SEARCH_KEYWORD = "남한산성";
