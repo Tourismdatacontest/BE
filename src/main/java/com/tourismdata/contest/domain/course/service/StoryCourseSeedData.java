@@ -61,24 +61,16 @@ final class StoryCourseSeedData {
             "산성의 동쪽을 지키던 장대(지휘소)가 있던 자리.";
     private static final String GUIDE_NAMJANGDAE =
             "산성의 남쪽을 지키던 장대(지휘소)가 있던 자리.";
-    private static final String GUIDE_JE3NAMONGSEONG =
-            "남장대 부근에 축조된 방어 시설(옹성) 중 하나로, 성벽 바깥으로 돌출시켜 적을 여러 방향에서 공격할 수 있게 만들었다.";
     private static final String GUIDE_JISUDANG =
             "조선시대에 조성된 연못과 정자.";
     private static final String GUIDE_DONGMUN =
             "남한산성 4대문 중 하나로, 성의 동쪽을 지키던 관문.";
-    private static final String GUIDE_SANSEONG_ROTARY =
-            "남한산성 탐방의 주요 시작점으로 쓰이는 광장. 여러 탐방로가 이곳에서 갈린다.";
     private static final String GUIDE_HISTORY_MUSEUM =
             "남한산성의 역사와 유물을 소개하는 전시관.";
     private static final String GUIDE_WORLD_HERITAGE_CENTER =
             "유네스코 세계유산으로 등재된 남한산성을 소개하는 방문자 센터.";
     private static final String GUIDE_GAEWONSA =
             "남한산성 축성 당시 승군을 통솔하던 총섭이 머물렀던 사찰.";
-    private static final String GUIDE_JE1NAMONGSEONG =
-            "남문 쪽에 축조된 방어 시설(옹성) 중 하나로, 둘레 423m에 8개의 포대가 설치되어 있었다.";
-    private static final String GUIDE_JE2NAMONGSEONG =
-            "남장대 바로 바깥쪽에 축조된 방어 시설(옹성)로, 다른 옹성과 달리 이중 구조로 되어 있다.";
     private static final String GUIDE_JANGGYEONGSA_SINJI_ONGSEONG =
             "장경사 인근 능선에 축조된 방어 시설(옹성)로, 병자호란이 끝난 뒤 새로 지어졌다.";
 
@@ -100,7 +92,6 @@ final class StoryCourseSeedData {
                     "병자호란 당시 성을 지켰던 승군의 흔적을 따라 산성로터리에서 숭렬전까지 걷는 코스.",
                     Difficulty.EASY,
                     List.of(
-                            new CheckpointSeed("산성로터리", 37.4771147, 127.1869876, GUIDE_SANSEONG_ROTARY),
                             new CheckpointSeed("행궁", 37.4778445, 127.1828485, GUIDE_HAENGGUNG),
                             new CheckpointSeed("수어장대", 37.4798450, 127.1766014, GUIDE_SUEOJANGDAE),
                             new CheckpointSeed("국청사", 37.4839626, 127.1770903, GUIDE_GUKCHEONGSA),
@@ -126,9 +117,7 @@ final class StoryCourseSeedData {
                     List.of(
                             new CheckpointSeed("남한산성역사박물관", 37.4761954, 127.1826459, GUIDE_HISTORY_MUSEUM),
                             new CheckpointSeed("남문(지화문)", 37.4733372, 127.1811677, GUIDE_NAMMUN),
-                            new CheckpointSeed("제1남옹성", 37.469688, 127.181938, GUIDE_JE1NAMONGSEONG),
-                            new CheckpointSeed("남장대터", 37.4718123, 127.1851225, GUIDE_NAMJANGDAE),
-                            new CheckpointSeed("제3남옹성", 37.471313, 127.189438, GUIDE_JE3NAMONGSEONG),
+                            new CheckpointSeed("제2남옹성(남장대터)", 37.4718123, 127.1851225, GUIDE_NAMJANGDAE),
                             new CheckpointSeed("지수당", 37.4758905, 127.1897516, GUIDE_JISUDANG),
                             new CheckpointSeed("개원사", 37.4742973, 127.1852725, GUIDE_GAEWONSA)
                     )
@@ -140,8 +129,7 @@ final class StoryCourseSeedData {
                     List.of(
                             new CheckpointSeed("남한산성역사문화관", 37.4761954, 127.1826459, GUIDE_HISTORY_MUSEUM),
                             new CheckpointSeed("지수당", 37.4758905, 127.1897516, GUIDE_JISUDANG),
-                            new CheckpointSeed("남장대터", 37.4718123, 127.1851225, GUIDE_NAMJANGDAE),
-                            new CheckpointSeed("제2남옹성", 37.469813, 127.185438, GUIDE_JE2NAMONGSEONG),
+                            new CheckpointSeed("제2남옹성(남장대터)", 37.4718123, 127.1851225, GUIDE_NAMJANGDAE),
                             new CheckpointSeed("남문(지화문)", 37.4733372, 127.1811677, GUIDE_NAMMUN),
                             new CheckpointSeed("수어장대", 37.4798450, 127.1766014, GUIDE_SUEOJANGDAE),
                             new CheckpointSeed("서문(우익문)", 37.4846475, 127.1760407, GUIDE_SEOMUN),

@@ -75,4 +75,14 @@ public class Checkpoint {
             this.imageUrl = imageUrl;
         }
     }
+
+    /** 기획 변경(체크포인트 명칭 보정 등)에 따른 이름 수정(관리자 도구). */
+    public void rename(String name) {
+        this.name = name;
+    }
+
+    /** 체크포인트 삭제로 생긴 순번 공백을 없애기 위한 재번호 부여(관리자 도구). */
+    public void updateOrderNo(int orderNo) {
+        this.orderNo = orderNo;
+    }
 }
