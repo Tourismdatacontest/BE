@@ -9,6 +9,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.Optional;
 
 /**
  * JWT 발급/검증.
@@ -43,5 +44,21 @@ public class JwtProvider {
             .parseSignedClaims(token)
             .getPayload();
         return Long.valueOf(claims.getSubject());
+    }
+
+    /**
+     * HTTP Authorization 헤더("Bearer {accessToken}")에서 userId를 꺼낸다.
+     * 로그인은 선택 사항(하이브리드 로그인)인 엔드포인트에서 쓰는 용도라, 헤더가 없거나
+     * 토큰이 없거나/만료됐거나/형식이 잘못돼도 예외를 던지지 않고 그냥 게스트로 취급한다.
+     */
+    public Optional<Long> parseUserIdFromAuthorizationHeader(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(parseUserId(authorizationHeader.substring("Bearer ".length())));
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
 }
