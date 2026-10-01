@@ -21,6 +21,7 @@ import com.tourismdata.contest.domain.course.repository.RoutePointRepository;
 import com.tourismdata.contest.domain.nearby.repository.CourseRecommendedPlaceRepository;
 import com.tourismdata.contest.domain.story.repository.StoryEventRepository;
 import com.tourismdata.contest.domain.story.repository.VisitIngredientRepository;
+import com.tourismdata.contest.domain.visit.entity.Visit;
 import com.tourismdata.contest.domain.visit.repository.VisitLocationLogRepository;
 import com.tourismdata.contest.domain.visit.repository.VisitRepository;
 import com.tourismdata.contest.external.tourapi.CheckpointTourApiClient;
@@ -172,6 +173,89 @@ public class CourseAdminService {
         }
 
         return created;
+    }
+
+    // 2026-10 기획 변경 반영(프론트 전달 내용 기준, 주호연): 삭제 2코스 산성로터리,
+    // 4코스 제1남옹성·제3남옹성, 5코스 제2남옹성 / 이름변경 4·5코스 남장대터 ->
+    // "제2남옹성(남장대터)". seedStoryCourses()와 달리 기존 코스/체크포인트 row를
+    // 유지한 채(실데이터 보존) 이 변경분만 반영한다. 재실행해도 이미 지워진 체크포인트는
+    // 조회가 안 되므로 멱등하게 동작한다.
+    public List<CourseSummaryResponse> applyCheckpointPlanRevision() {
+        deleteCheckpointByName("2코스 · 승려의 길", "산성로터리");
+        deleteCheckpointByName("4코스 · 무관의 길", "제1남옹성");
+        deleteCheckpointByName("4코스 · 무관의 길", "제3남옹성");
+        deleteCheckpointByName("5코스 · 인조의 길", "제2남옹성");
+        renameCheckpointByName("4코스 · 무관의 길", "남장대터", "제2남옹성(남장대터)");
+        renameCheckpointByName("5코스 · 인조의 길", "남장대터", "제2남옹성(남장대터)");
+
+        List<CourseSummaryResponse> updated = new ArrayList<>();
+        for (String courseTitle : List.of("2코스 · 승려의 길", "4코스 · 무관의 길", "5코스 · 인조의 길")) {
+            Course course = courseRepository.findByTitle(courseTitle)
+                    .orElseThrow(() -> new CustomException(ErrorCode.COURSE_NOT_FOUND));
+            updated.add(CourseSummaryResponse.from(refreshCourseAfterCheckpointChange(course)));
+        }
+        return updated;
+    }
+
+    // 이름으로 체크포인트를 찾아 삭제(없으면 이미 적용된 것으로 보고 건너뜀). 삭제 전
+    // FK로 걸린 story_event(및 조인 테이블)를 먼저 지우고, 그 체크포인트를 현재 위치로
+    // 둔 탐방이 있으면 참조를 비운다.
+    private void deleteCheckpointByName(String courseTitle, String checkpointName) {
+        Course course = courseRepository.findByTitle(courseTitle)
+                .orElseThrow(() -> new CustomException(ErrorCode.COURSE_NOT_FOUND));
+
+        checkpointRepository.findByCourse_CourseIdOrderByOrderNoAsc(course.getCourseId()).stream()
+                .filter(checkpoint -> checkpoint.getName().equals(checkpointName))
+                .findFirst()
+                .ifPresent(checkpoint -> {
+                    Long checkpointId = checkpoint.getCheckpointId();
+                    storyEventRepository.deleteByCheckpoint_CheckpointId(checkpointId);
+                    List<Visit> visitsAtCheckpoint = visitRepository.findByCurrentCheckpoint_CheckpointId(checkpointId);
+                    visitsAtCheckpoint.forEach(Visit::clearCurrentCheckpoint);
+                    checkpointRepository.delete(checkpoint);
+                    checkpointRepository.flush();
+                });
+    }
+
+    // 이름으로 체크포인트를 찾아 이름만 바꾼다(없으면 건너뜀 - 이미 바뀐 상태일 수 있음).
+    private void renameCheckpointByName(String courseTitle, String oldName, String newName) {
+        Course course = courseRepository.findByTitle(courseTitle)
+                .orElseThrow(() -> new CustomException(ErrorCode.COURSE_NOT_FOUND));
+
+        checkpointRepository.findByCourse_CourseIdOrderByOrderNoAsc(course.getCourseId()).stream()
+                .filter(checkpoint -> checkpoint.getName().equals(oldName))
+                .findFirst()
+                .ifPresent(checkpoint -> checkpoint.rename(newName));
+    }
+
+    // 삭제로 생긴 순번 공백을 없애 1..N으로 재배열하고, 경로(route_points)와 코스
+    // 거리/예상 소요시간을 남은 체크포인트 기준으로 다시 계산한다.
+    private Course refreshCourseAfterCheckpointChange(Course course) {
+        List<Checkpoint> checkpoints = checkpointRepository
+                .findByCourse_CourseIdOrderByOrderNoAsc(course.getCourseId());
+
+        int orderNo = 1;
+        for (Checkpoint checkpoint : checkpoints) {
+            checkpoint.updateOrderNo(orderNo++);
+        }
+
+        generateRouteFromCheckpoints(course.getCourseId());
+
+        int distanceM = (int) Math.round(totalStraightLineDistanceFromCheckpoints(checkpoints));
+        int estimatedMinutes = Math.max(1, (int) Math.ceil(distanceM / 50.0));
+        course.updateDistance(distanceM, estimatedMinutes);
+        return course;
+    }
+
+    private double totalStraightLineDistanceFromCheckpoints(List<Checkpoint> checkpoints) {
+        double total = 0;
+        for (int i = 1; i < checkpoints.size(); i++) {
+            Checkpoint prev = checkpoints.get(i - 1);
+            Checkpoint curr = checkpoints.get(i);
+            total += GeoUtils.distanceInMeters(prev.getLatitude(), prev.getLongitude(),
+                    curr.getLatitude(), curr.getLongitude());
+        }
+        return total;
     }
 
     // 한국관광공사 TourAPI(KorService2 상세조회 + PhotoGalleryService1)로 체크포인트

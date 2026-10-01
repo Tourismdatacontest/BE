@@ -83,6 +83,12 @@ public class Visit {
         this.visitedCheckpointCount++;
     }
 
+    // 기획 변경으로 체크포인트 자체가 삭제될 때, FK 보호를 위해 가리키던 현재 위치를 비운다.
+    // visitedCheckpointCount(이미 방문 처리된 수)는 건드리지 않는다.
+    public void clearCurrentCheckpoint() {
+        this.currentCheckpoint = null;
+    }
+
     public void complete(String resultSummary) {
         this.status = VisitStatus.COMPLETED;
         this.completedAt = LocalDateTime.now();

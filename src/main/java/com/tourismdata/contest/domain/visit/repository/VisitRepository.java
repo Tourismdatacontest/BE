@@ -11,4 +11,7 @@ import java.util.List;
 public interface VisitRepository extends JpaRepository<Visit, Long> {
 
     List<Visit> findByUser_UserIdOrderByStartedAtDesc(Long userId);
+
+    // 체크포인트 삭제(관리자 도구) 전, 그 체크포인트를 현재 위치로 둔 탐방을 찾아 FK를 비우기 위함.
+    List<Visit> findByCurrentCheckpoint_CheckpointId(Long checkpointId);
 }

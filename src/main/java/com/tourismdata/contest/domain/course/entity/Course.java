@@ -59,4 +59,10 @@ public class Course extends BaseTimeEntity {
         this.estimatedMinutes = estimatedMinutes;
         this.difficulty = difficulty;
     }
+
+    /** 체크포인트 변경(추가/삭제) 후 거리·예상 소요시간을 다시 계산해 반영한다(관리자 도구). */
+    public void updateDistance(Integer distanceM, Integer estimatedMinutes) {
+        this.distanceM = distanceM;
+        this.estimatedMinutes = estimatedMinutes;
+    }
 }

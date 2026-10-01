@@ -48,4 +48,12 @@ public class CourseAdminController {
     public List<CheckpointResponse> enrichCheckpointsFromTourApi() {
         return courseAdminService.enrichCheckpointsFromTourApi();
     }
+
+    // 2026-10 기획 변경 1회 반영용(산성로터리/제1·3남옹성 삭제, 남장대터 ->
+    // 제2남옹성(남장대터) 이름변경). 기존 코스/체크포인트는 유지한 채 이 변경분만 적용되고,
+    // 재호출해도 안전하다(이미 지워진 건 건너뜀).
+    @PostMapping("/checkpoints/apply-plan-revision-202610")
+    public List<CourseSummaryResponse> applyCheckpointPlanRevision() {
+        return courseAdminService.applyCheckpointPlanRevision();
+    }
 }
