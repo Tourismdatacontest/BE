@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -18,6 +19,7 @@ import com.tourismdata.contest.domain.visit.dto.VisitResponse;
 import com.tourismdata.contest.domain.visit.dto.VisitResultResponse;
 import com.tourismdata.contest.domain.visit.dto.VisitSummaryResponse;
 import com.tourismdata.contest.domain.visit.service.VisitService;
+import com.tourismdata.contest.global.security.JwtProvider;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,11 +32,16 @@ import lombok.RequiredArgsConstructor;
 public class VisitController {
 
     private final VisitService visitService;
+    private final JwtProvider jwtProvider;
 
+    // Authorization 헤더가 있고 유효한 토큰이면(= 로그인 상태) 그 자리에서 계정에 연결해서
+    // 생성한다. 헤더가 없거나 토큰이 무효해도 에러 없이 게스트로 생성된다(하이브리드 로그인).
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public VisitResponse createVisit(@Valid @RequestBody VisitCreateRequest request) {
-        return visitService.createVisit(request);
+    public VisitResponse createVisit(@Valid @RequestBody VisitCreateRequest request,
+                                       @RequestHeader(value = "Authorization", required = false) String authorization) {
+        Long userId = jwtProvider.parseUserIdFromAuthorizationHeader(authorization).orElse(null);
+        return visitService.createVisit(request, userId);
     }
 
     // 로그인 유저의 탐방 기록 목록 (마이페이지 등). 게스트로 진행해 계정에 연결 안 된

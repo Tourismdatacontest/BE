@@ -12,6 +12,7 @@ import com.tourismdata.contest.domain.mode.entity.Mode;
 import com.tourismdata.contest.domain.mode.repository.ModeRepository;
 import com.tourismdata.contest.domain.story.entity.VisitIngredient;
 import com.tourismdata.contest.domain.story.repository.VisitIngredientRepository;
+import com.tourismdata.contest.domain.user.repository.UserRepository;
 import com.tourismdata.contest.domain.visit.dto.CollectedIngredientResponse;
 import com.tourismdata.contest.domain.visit.dto.VisitCreateRequest;
 import com.tourismdata.contest.domain.visit.dto.VisitLocationLogResponse;
@@ -39,19 +40,30 @@ public class VisitService {
     private final VisitIngredientRepository visitIngredientRepository;
     private final CourseRepository courseRepository;
     private final ModeRepository modeRepository;
+    private final UserRepository userRepository;
 
-    public VisitResponse createVisit(VisitCreateRequest request) {
+    // userId는 Authorization 헤더(Bearer 토큰)로 로그인 여부를 판단한 결과(컨트롤러에서 파싱해 전달).
+    // null이면 게스트로 시작 - 이 경우 스토리 모드 보상 시점에 로그인하면 AuthService.linkVisits()가
+    // Visit.linkUser()로 나중에 연결한다. 이미 로그인한 상태로 새 탐방을 시작하면 그 자리에서 바로
+    // 계정에 연결해, 마이페이지 기록에 즉시 남도록 한다(로그인 상태에서 시작한 탐방이 연결이 안
+    // 되는 문제 - 프론트 전달, 안혜선).
+    public VisitResponse createVisit(VisitCreateRequest request, Long userId) {
         Course course = courseRepository.findById(request.courseId())
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_VISIT_REQUEST));
         Mode mode = modeRepository.findById(request.modeId())
                 .orElseThrow(() -> new CustomException(ErrorCode.INVALID_VISIT_REQUEST));
 
-        // 하이브리드 로그인: 게스트로 시작 (user는 null) - 스토리 모드 보상 시점에
-        // 로그인하면 AuthService.linkVisits()가 Visit.linkUser()로 나중에 연결한다.
         Visit visit = Visit.builder()
                 .course(course)
                 .mode(mode)
                 .build();
+
+        if (userId != null) {
+            // 토큰은 유효했지만(JwtProvider 검증 통과) 가리키는 유저가 이미 탈퇴 등으로 없는
+            // 경우에도 탐방 생성 자체는 막지 않고 게스트로 진행한다.
+            userRepository.findById(userId).ifPresent(visit::linkUser);
+        }
+
         visitRepository.save(visit);
 
         return VisitResponse.from(visit);
